@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Bouwcapaciteitcheck",
     description: "Bouwpijplijn en capaciteitsknelpunten zichtbaar maken",
-    url: "https://bouwcapaciteitcheck.nl",
+    url: "https://lumen.thenorthsolution.com/pipeline",
     siteName: "Bouwcapaciteitcheck",
     locale: "nl_NL",
   },
