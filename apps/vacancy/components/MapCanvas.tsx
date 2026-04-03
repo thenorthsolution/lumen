@@ -20,6 +20,14 @@ const LAYER_LAAG = "leegstand-laag";
 const LAYER_PERCELEN = "leegstand-percelen";
 const LAYER_HOOG_OUTLINE = "leegstand-hoog-outline";
 
+// MapLibre paint properties do NOT support CSS variables — use resolved hex values
+const COLORS = {
+  hoog: "#3fb950",
+  middel: "#d29922",
+  laag: "#484f58",
+  selected: "#58a6ff",
+};
+
 interface MapCanvasProps {
   gemeente: Gemeente;
   layers: LayerVisibility;
@@ -79,11 +87,11 @@ export function MapCanvas({
         generateId: true,
       });
 
-      // Polygon fill layers per tier
+      // Polygon fill layers per tier — colours must be hex, NOT CSS vars
       addPolygonLayer(
         map,
         LAYER_LAAG,
-        "var(--color-laag)",
+        COLORS.laag,
         0.35,
         SOURCE_LEEGSTAND,
         "laag",
@@ -91,7 +99,7 @@ export function MapCanvas({
       addPolygonLayer(
         map,
         LAYER_MIDDEL,
-        "var(--color-middel)",
+        COLORS.middel,
         0.55,
         SOURCE_LEEGSTAND,
         "middel",
@@ -99,7 +107,7 @@ export function MapCanvas({
       addPolygonLayer(
         map,
         LAYER_HOOG,
-        "var(--color-hoog)",
+        COLORS.hoog,
         0.7,
         SOURCE_LEEGSTAND,
         "hoog",
@@ -114,10 +122,10 @@ export function MapCanvas({
           "line-color": [
             "case",
             ["==", ["get", "identificatie"], selectedFeatureId ?? ""],
-            "#58a6ff",
+            COLORS.selected,
             ["==", ["get", "score_tier"], "hoog"],
-            "#3fb950",
-            "#bb8009",
+            COLORS.hoog,
+            COLORS.middel,
           ],
           "line-width": [
             "case",
@@ -137,7 +145,6 @@ export function MapCanvas({
           const feature = e.features?.[0];
           if (!feature) return;
 
-          // Reconstruct VboFeature from map feature
           const props = feature.properties as Record<string, unknown>;
           const vboFeature: VboFeature = {
             type: "Feature",
@@ -197,7 +204,6 @@ export function MapCanvas({
       essential: true,
     });
 
-    // Abort any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -212,7 +218,6 @@ export function MapCanvas({
           | maplibregl.GeoJSONSource
           | undefined;
         if (source) {
-          // Flatten score to top-level property for MapLibre filter access
           const flat = {
             ...fc,
             features: fc.features.map((f) => ({
@@ -276,10 +281,10 @@ export function MapCanvas({
       map.setPaintProperty(LAYER_HOOG_OUTLINE, "line-color", [
         "case",
         ["==", ["get", "identificatie"], selectedFeatureId ?? "__none__"],
-        "#58a6ff",
+        COLORS.selected,
         ["==", ["get", "score_tier"], "hoog"],
-        "#3fb950",
-        "#bb8009",
+        COLORS.hoog,
+        COLORS.middel,
       ]);
       map.setPaintProperty(LAYER_HOOG_OUTLINE, "line-width", [
         "case",
@@ -337,10 +342,6 @@ function addPolygonLayer(
   });
 }
 
-/**
- * Dark monochrome MapLibre style using PDOK BRT tiles.
- * Falls back to open-source demotiles if PDOK is unavailable.
- */
 function buildDarkStyle(): maplibregl.StyleSpecification {
   return {
     version: 8,

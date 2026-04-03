@@ -71,7 +71,12 @@ export function buildWfsUrl(params: WfsQueryParams): string {
 
 /**
  * Fetch BAG verblijfsobjecten within a gemeente.
- * Filters by gemeentecode from the official BAG attribute.
+ *
+ * Notes on PDOK BAG WFS field names:
+ * - The geometry field is "geom" (not "geometrie")
+ * - Status values must match BAG catalogue exactly (case-sensitive)
+ * - propertyName omitted to let PDOK return all fields, avoiding 400s
+ *   from requesting non-existent field names
  */
 export function bagVerblijfsobjectenUrl(
   gemeenteCode: string,
@@ -84,35 +89,40 @@ export function bagVerblijfsobjectenUrl(
   const filters: string[] = [`gemeentecode = '${gemeenteCode}'`];
 
   if (options?.status?.length) {
-    const statusFilter = options.status
-      .map((s) => `status = '${s}'`)
-      .join(" OR ");
-    filters.push(`(${statusFilter})`);
+    if (options.status.length === 1) {
+      filters.push(`status = '${options.status[0]}'`);
+    } else {
+      const statusFilter = options.status
+        .map((s) => `status = '${s}'`)
+        .join(" OR ");
+      filters.push(`(${statusFilter})`);
+    }
   }
 
   if (options?.gebruiksdoel?.length) {
-    const gdFilter = options.gebruiksdoel
-      .map((g) => `gebruiksdoel = '${g}'`)
-      .join(" OR ");
-    filters.push(`(${gdFilter})`);
+    if (options.gebruiksdoel.length === 1) {
+      filters.push(`gebruiksdoel = '${options.gebruiksdoel[0]}'`);
+    } else {
+      const gdFilter = options.gebruiksdoel
+        .map((g) => `gebruiksdoel = '${g}'`)
+        .join(" OR ");
+      filters.push(`(${gdFilter})`);
+    }
   }
 
-  return buildWfsUrl({
-    service: PDOK_ENDPOINTS.BAG_WFS,
-    typeName: "bag:verblijfsobject",
-    cqlFilter: filters.join(" AND "),
-    count: options?.maxFeatures ?? 5000,
-    propertyName: [
-      "identificatie",
-      "status",
-      "gebruiksdoel",
-      "oppervlakte",
-      "bouwjaar",
-      "gemeentecode",
-      "woonplaatsnaam",
-      "geometrie",
-    ],
-  });
+  const url = new URL(PDOK_ENDPOINTS.BAG_WFS);
+  url.searchParams.set("service", "WFS");
+  url.searchParams.set("version", "2.0.0");
+  url.searchParams.set("request", "GetFeature");
+  url.searchParams.set("typeName", "bag:verblijfsobject");
+  url.searchParams.set("outputFormat", "application/json");
+  url.searchParams.set("srsName", "EPSG:4326");
+  url.searchParams.set("count", String(options?.maxFeatures ?? 5000));
+  url.searchParams.set("CQL_FILTER", filters.join(" AND "));
+  // Do NOT set propertyName — PDOK returns 400 if any requested field
+  // name doesn't exist. Let the server return all fields instead.
+
+  return url.toString();
 }
 
 /**
@@ -124,13 +134,6 @@ export function bagPandenUrl(gemeenteCode: string, maxFeatures = 2000): string {
     typeName: "bag:pand",
     cqlFilter: `gemeentecode = '${gemeenteCode}'`,
     count: maxFeatures,
-    propertyName: [
-      "identificatie",
-      "status",
-      "bouwjaar",
-      "gemeentecode",
-      "geometrie",
-    ],
   });
 }
 
