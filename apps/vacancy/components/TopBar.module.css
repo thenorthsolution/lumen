@@ -1,0 +1,239 @@
+.topbar {
+  height: var(--topbar-height);
+  background: var(--surface-raised);
+  border-bottom: 0.5px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+.logoNorth {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  letter-spacing: 0.1em;
+}
+
+.logoDivider {
+  font-size: 11px;
+  color: var(--border-default);
+}
+
+.logoTool {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.navItem {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+  letter-spacing: 0.04em;
+}
+
+.navItem:hover {
+  color: var(--text-primary);
+  background: var(--surface-overlay);
+}
+
+.navItemActive {
+  color: var(--text-primary);
+  background: var(--surface-overlay);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.loadingBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.loadingPulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.loadingText {
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+}
+
+.gemeenteWrap {
+  position: relative;
+}
+
+.gemeentePill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--surface-overlay);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: border-color 0.1s;
+  font-family: var(--font-mono);
+}
+
+.gemeentePill:hover {
+  border-color: var(--border-default);
+}
+
+.gemeenteName {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent-blue);
+}
+
+.gemeenteProvince {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  background: var(--surface-raised);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  z-index: 200;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+
+.searchIcon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.resultList {
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.resultItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: background 0.1s;
+}
+
+.resultItem:hover {
+  background: var(--surface-overlay);
+}
+
+.resultItemActive {
+  background: var(--accent-blue-bg);
+}
+
+.resultName {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.resultProvince {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.noResults {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.dropdownFooter {
+  padding: 8px 12px;
+  border-top: 0.5px solid var(--border-subtle);
+}
+
+.footerLink {
+  font-size: 10px;
+  color: var(--accent-blue);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+
+.githubLink {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  transition: color 0.1s;
+  padding: 4px;
+}
+
+.githubLink:hover {
+  color: var(--text-primary);
+}

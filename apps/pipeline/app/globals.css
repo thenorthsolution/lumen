@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
+@theme {
+  --color-surface-base:    #0d1117;
+  --color-surface-raised:  #161b22;
+  --color-surface-overlay: #21262d;
+  --color-surface-hover:   #30363d40;
+
+  --color-border-subtle:   #30363d;
+  --color-border-default:  #484f58;
+
+  --color-text-primary:    #e6edf3;
+  --color-text-secondary:  #8b949e;
+  --color-text-muted:      #484f58;
+
+  /* Amber accent — distinct from Lumen Space teal and Lumen Vacancy blue */
+  --color-accent:          #e8b84b;
+  --color-accent-dim:      #7a5f1a;
+  --color-accent-bg:       #7a5f1a18;
+
+  /* Pipeline heat scale — low to high activity */
+  --color-heat-0: #1c2128;
+  --color-heat-1: #1a3040;
+  --color-heat-2: #1a4060;
+  --color-heat-3: #1a5578;
+  --color-heat-4: #1a6e8e;
+  --color-heat-5: #2196b0;
+  --color-heat-6: #e8b84b;
+  --color-heat-7: #d97c2a;
+  --color-heat-8: #c94c1a;
+
+  /* Bottleneck signals */
+  --color-signal-ok:    #3fb950;
+  --color-signal-warn:  #e8b84b;
+  --color-signal-alert: #f85149;
+
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --height-topbar:  44px;
+  --width-sidebar:  260px;
+  --height-statbar: 44px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#__next {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── MapLibre overrides ─────────────────────────────────────────────────── */
+.maplibregl-map { background: var(--color-surface-base) !important; }
+
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left { bottom: calc(var(--height-statbar) + 8px); }
+
+.maplibregl-ctrl button {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border-subtle) !important;
+}
+.maplibregl-ctrl button:hover { background: var(--color-surface-overlay) !important; }
+.maplibregl-ctrl button span  { filter: invert(1); }
+
+.maplibregl-popup-content {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  border: 0.5px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-subtle); border-radius: 2px; }
+
+/* ─── shadcn/ui base layer ───────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --background: var(--color-surface-base);
+    --foreground: var(--color-text-primary);
+    --muted: var(--color-surface-overlay);
+    --muted-foreground: var(--color-text-secondary);
+    --border: var(--color-border-subtle);
+    --input: var(--color-surface-overlay);
+    --ring: var(--color-accent);
+    --radius: var(--radius-md);
+  }
+}

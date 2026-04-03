@@ -1,0 +1,19 @@
+{
+  "name": "@lumen/bag-utils",
+  "version": "0.1.0",
+  "description": "BAG status codes, viability scoring model, and data correction utilities",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "bag",
+    "netherlands",
+    "housing",
+    "vacancy",
+    "viability"
+  ],
+  "license": "MIT"
+}

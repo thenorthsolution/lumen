@@ -1,0 +1,81 @@
+# --- General & OS ---
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.vscode/
+.idea/
+
+# --- Node / pnpm / Turborepo ---
+node_modules
+.pnpm-debug.log*
+.turbo
+dist
+build
+.next
+out
+.vercel
+stats.html
+
+# --- TypeScript ---
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+*.pem
+# Supabase/Cloudflare secrets
+.wrangler
+.supabase/storage
+supabase/.temp
+
+# --- Python & Data Pipeline ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
+venv/
+ENV/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- GIS & Large Data Files ---
+# We ignore these because they should be fetched via the pipeline 
+# or hosted on a CDN/PMTiles server, not stored in Git history.
+*.geojson
+*.gpkg
+*.shp
+*.dbf
+*.prj
+*.shx
+*.csv
+*.parquet
+*.geoparquet
+
+# --- DuckDB & Databases ---
+*.duckdb
+*.duckdb.wal
+*.sqlite
+*.sqlite-journal
+
+# --- Map Tiles ---
+# PMTiles archives can be hundreds of MBs. Do not commit.
+*.pmtiles
+# MBTiles (if used)
+*.mbtiles
+
+# --- Documentation ---
+# If using Mintlify or Fumadocs local previews
+.mintlify
+.fumadocs
+
+# --- Testing ---
+/coverage
+.nyc_output
+playwright-report/
+test-results/

@@ -1,0 +1,19 @@
+{
+  "name": "@lumen/pdok-client",
+  "version": "0.1.0",
+  "description": "Typed client for Dutch PDOK geodata APIs — BAG, bestemmingsplan, kadaster, vector tiles",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "pdok",
+    "bag",
+    "netherlands",
+    "geodata",
+    "gis"
+  ],
+  "license": "MIT"
+}

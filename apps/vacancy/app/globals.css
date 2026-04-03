@@ -1,0 +1,181 @@
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* ─────────────────────────────────────────────────────────────
+   Design tokens — Palantir-inspired dark enterprise palette
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --surface-base:     #0d1117;
+  --surface-raised:   #161b22;
+  --surface-overlay:  #21262d;
+  --surface-hover:    #30363d40;
+
+  /* Borders */
+  --border-subtle:    #30363d;
+  --border-default:   #484f58;
+  --border-strong:    #6e7681;
+
+  /* Text */
+  --text-primary:     #e6edf3;
+  --text-secondary:   #8b949e;
+  --text-muted:       #484f58;
+
+  /* Brand accent */
+  --accent-blue:      #58a6ff;
+  --accent-blue-dim:  #1f6feb;
+  --accent-blue-bg:   #1f6feb18;
+
+  /* Semantic */
+  --color-hoog:       #3fb950;
+  --color-hoog-bg:    #1a4a1a;
+  --color-hoog-border:#2ea043;
+  --color-middel:     #d29922;
+  --color-middel-bg:  #3a3010;
+  --color-middel-border: #bb8009;
+  --color-laag:       #484f58;
+  --color-laag-bg:    #21262d;
+  --color-danger:     #f85149;
+  --color-warning:    #e3b341;
+
+  /* Typography */
+  --font-mono:        "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+  --font-sans:        "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Layout */
+  --topbar-height:    44px;
+  --sidebar-width:    240px;
+  --detail-width:     260px;
+  --statbar-height:   44px;
+  --radius-sm:        4px;
+  --radius-md:        6px;
+  --radius-lg:        8px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Reset
+   ───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#__next {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MapLibre overrides — integrate with enterprise theme
+   ───────────────────────────────────────────────────────────── */
+.maplibregl-map {
+  background: var(--surface-base) !important;
+}
+
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left {
+  bottom: calc(var(--statbar-height) + 8px);
+}
+
+.maplibregl-ctrl button {
+  background: var(--surface-raised) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.maplibregl-ctrl button:hover {
+  background: var(--surface-overlay) !important;
+}
+
+.maplibregl-ctrl button span {
+  filter: invert(1);
+}
+
+.maplibregl-popup-content {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: var(--surface-raised) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Scrollbars — minimal, dark-mode compatible
+   ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Range input — custom styling
+   ───────────────────────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--surface-overlay);
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  cursor: pointer;
+  border: 2px solid var(--surface-raised);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  cursor: pointer;
+  border: 2px solid var(--surface-raised);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Utility classes
+   ───────────────────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

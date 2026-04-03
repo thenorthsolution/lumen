@@ -1,0 +1,2 @@
+.shell { display: flex; flex-direction: column; height: 100dvh; width: 100%; overflow: hidden; }
+.body  { display: flex; flex: 1; min-height: 0; position: relative; overflow: hidden; }

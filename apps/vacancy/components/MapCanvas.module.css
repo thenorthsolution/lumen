@@ -1,0 +1,7 @@
+.canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-base);
+  min-width: 0;
+}

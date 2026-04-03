@@ -1,0 +1,65 @@
+.bar {
+  height: var(--statbar-height);
+  background: var(--surface-raised);
+  border-top: 0.5px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 0;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 16px;
+}
+
+.value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.label {
+  font-size: 9px;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.divider {
+  width: 0.5px;
+  height: 24px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: right;
+}
+
+.metaVal {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.metaLabel {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
