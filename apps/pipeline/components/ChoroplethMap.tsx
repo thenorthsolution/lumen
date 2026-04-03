@@ -2,37 +2,39 @@
 
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
-import type { PipelineData, ProvinceMetrics } from "@/lib/pipeline-data";
+import type { FeatureCollection } from "geojson";
+import type { PipelineData, ProvinceMetrics } from "@/lib/types";
 
-const HEAT_STOPS = [
-  [0,    "#1c2128"],
-  [0.15, "#1a3040"],
-  [0.3,  "#1a4060"],
-  [0.45, "#1a5578"],
-  [0.6,  "#1a6e8e"],
-  [0.75, "#2196b0"],
-  [0.85, "#e8b84b"],
-  [1,    "#d97c2a"],
-] as const;
+const HEAT_STOPS: [number, string][] = [
+  [0, "#0e1318"],
+  [0.15, "#0d2030"],
+  [0.3, "#0c3048"],
+  [0.45, "#0b4260"],
+  [0.6, "#1a7a96"],
+  [0.8, "#e8b84b"],
+  [1, "#d97c2a"],
+];
 
-const SIGNAL_COLORS = {
-  ok:    "var(--color-signal-ok)",
-  warn:  "var(--color-signal-warn)",
-  alert: "var(--color-signal-alert)",
-};
-
-interface ChoroplethMapProps {
+interface Props {
   data: PipelineData | null;
   selected: ProvinceMetrics | null;
   onSelect: (m: ProvinceMetrics | null) => void;
   isLoading: boolean;
 }
 
-export function ChoroplethMap({ data, selected, onSelect, isLoading }: ChoroplethMapProps) {
+export function ChoroplethMap({ data, selected, onSelect, isLoading }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef       = useRef<maplibregl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const dataRef = useRef(data);
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
 
-  // Mount map once
+  // Mount map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -44,26 +46,47 @@ export function ChoroplethMap({ data, selected, onSelect, isLoading }: Choroplet
         sources: {
           brt: {
             type: "raster",
-            tiles: ["https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png"],
+            tiles: [
+              "https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png",
+            ],
             tileSize: 256,
             attribution: "© Kadaster / PDOK",
             maxzoom: 19,
           },
         },
         layers: [
-          { id: "background", type: "background", paint: { "background-color": "#0d1117" } },
-          { id: "brt",        type: "raster",     source: "brt", paint: { "raster-opacity": 0.18, "raster-brightness-max": 0.25, "raster-saturation": -1 } },
+          {
+            id: "bg",
+            type: "background",
+            paint: { "background-color": "#080c10" },
+          },
+          {
+            id: "brt",
+            type: "raster",
+            source: "brt",
+            paint: {
+              "raster-opacity": 0.15,
+              "raster-brightness-max": 0.2,
+              "raster-saturation": -1,
+            },
+          },
         ],
       } as maplibregl.StyleSpecification,
       center: [5.3, 52.3],
       zoom: 6.8,
-      maxZoom: 12,
+      maxZoom: 13,
       minZoom: 5,
       attributionControl: false,
     });
 
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    map.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      "bottom-right",
+    );
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      "bottom-right",
+    );
 
     map.on("load", () => {
       map.addSource("provinces", {
@@ -77,28 +100,34 @@ export function ChoroplethMap({ data, selected, onSelect, isLoading }: Choroplet
         source: "provinces",
         paint: {
           "fill-color": [
-            "interpolate", ["linear"], ["get", "activityScore"],
-            ...HEAT_STOPS.flatMap(([stop, color]) => [stop, color]),
+            "interpolate",
+            ["linear"],
+            ["get", "activityScore"],
+            ...HEAT_STOPS.flatMap(([s, c]) => [s, c]),
           ],
-          "fill-opacity": 0.75,
+          "fill-opacity": 0.78,
         },
       });
 
       map.addLayer({
-        id: "provinces-outline",
+        id: "provinces-line",
         type: "line",
         source: "provinces",
         paint: {
-          "line-color": [
-            "case",
-            ["==", ["get", "province"], selected?.province ?? "__none__"], "#ffffff",
-            "#30363d",
-          ],
-          "line-width": [
-            "case",
-            ["==", ["get", "province"], selected?.province ?? "__none__"], 2, 0.5,
-          ],
+          "line-color": "rgba(255,255,255,0.12)",
+          "line-width": 0.5,
         },
+      });
+
+      map.addLayer({
+        id: "provinces-selected",
+        type: "line",
+        source: "provinces",
+        paint: {
+          "line-color": "#e8b84b",
+          "line-width": 2,
+        },
+        filter: ["==", ["get", "province"], "__none__"],
       });
 
       map.addLayer({
@@ -107,93 +136,142 @@ export function ChoroplethMap({ data, selected, onSelect, isLoading }: Choroplet
         source: "provinces",
         layout: {
           "text-field": ["get", "province"],
-          "text-size": 11,
+          "text-size": 10,
           "text-font": ["Open Sans Regular"],
-          "text-anchor": "center",
         },
         paint: {
-          "text-color": "#8b949e",
-          "text-halo-color": "#0d1117",
+          "text-color": "rgba(255,255,255,0.55)",
+          "text-halo-color": "#080c10",
           "text-halo-width": 1.5,
         },
       });
 
       map.on("click", "provinces-fill", (e) => {
-        const props    = e.features?.[0]?.properties as Record<string, unknown> | undefined;
-        const province = String(props?.["province"] ?? "");
-        document.dispatchEvent(new CustomEvent("provinceSelect", { detail: province }));
+        const props = e.features?.[0]?.properties as
+          | Record<string, unknown>
+          | undefined;
+        const name = String(props?.["province"] ?? "");
+        const m =
+          dataRef.current?.byProvince.find((p) => p.province === name) ?? null;
+        onSelectRef.current(m);
       });
 
-      map.on("mouseenter", "provinces-fill", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "provinces-fill", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "provinces-fill", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "provinces-fill", () => {
+        map.getCanvas().style.cursor = "";
+      });
+
+      // Load initial data if already available
+      if (dataRef.current) updateMap(map, dataRef.current);
     });
 
-    mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+    const raf = requestAnimationFrame(() => map.resize());
 
-  // Update choropleth when data arrives
+    mapRef.current = map;
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []); // eslint-disable-line
+
+  // Update data
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !data || !map.isStyleLoaded()) return;
-
-    fetchProvinceGeoJSON(data).then(geojson => {
-      const source = map.getSource("provinces") as maplibregl.GeoJSONSource | undefined;
-      source?.setData(geojson);
-    }).catch(console.error);
+    if (!map || !data) return;
+    if (map.isStyleLoaded()) {
+      updateMap(map, data);
+    } else {
+      map.once("load", () => updateMap(map, data));
+    }
   }, [data]);
 
-  // Wire province select event to parent
+  // Update selection highlight
   useEffect(() => {
-    function handler(e: Event) {
-      const province = (e as CustomEvent<string>).detail;
-      const metrics  = data?.byProvince.find(p => p.province === province) ?? null;
-      onSelect(metrics);
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    try {
+      map.setFilter("provinces-selected", [
+        "==",
+        ["get", "province"],
+        selected?.province ?? "__none__",
+      ]);
+    } catch {
+      /* layer not ready */
     }
-    document.addEventListener("provinceSelect", handler);
-    return () => document.removeEventListener("provinceSelect", handler);
-  }, [data, onSelect]);
+  }, [selected]);
 
   return (
-    <div className="flex-1 relative overflow-hidden">
-      <div ref={containerRef} className="absolute inset-0" role="application" aria-label="Bouwpijplijnkaart" />
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        ref={containerRef}
+        style={{ position: "absolute", inset: 0 }}
+        role="application"
+        aria-label="Bouwpijplijnkaart"
+      />
 
-      {/* Province tooltip */}
+      {/* Province card */}
       {selected && (
-        <div className="absolute top-4 right-4 w-[220px] bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] rounded-[var(--radius-lg)] p-3.5 z-20">
-          <div className="flex justify-between items-center mb-2.5">
-            <span className="text-[13px] font-medium text-[var(--color-text-primary)]">{selected.province}</span>
-            <BottleneckBadge signal={selected.bottleneckSignal} />
-          </div>
-          {[
-            { label: "Actieve tenders",  value: String(selected.activeTenderCount) },
-            { label: "Geschatte waarde", value: `€${Math.round(selected.estimatedValue / 1_000_000)} M` },
-            { label: "Trend",            value: selected.trend === "growing" ? "groeiend" : selected.trend === "shrinking" ? "krimpend" : "stabiel",
-              color: selected.trend === "growing" ? "var(--color-signal-ok)" : selected.trend === "shrinking" ? "var(--color-signal-alert)" : "var(--color-text-secondary)" },
-          ].map(row => (
-            <div key={row.label} className="flex justify-between text-[11px] py-1 border-b border-[var(--color-border-subtle)] last:border-b-0">
-              <span className="text-[var(--color-text-secondary)]">{row.label}</span>
-              <span style={{ color: row.color ?? "var(--color-text-primary)" }}>{row.value}</span>
-            </div>
-          ))}
-          <button
-            className="absolute top-2.5 right-2.5 bg-transparent border-none cursor-pointer text-[var(--color-text-secondary)] p-0.5 hover:text-[var(--color-text-primary)] transition-colors"
-            onClick={() => onSelect(null)}
-            aria-label="Sluiten"
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
-              <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-          </button>
-        </div>
+        <ProvinceCard province={selected} onClose={() => onSelect(null)} />
       )}
 
       {/* Legend */}
-      <div className="absolute left-4 z-20 bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] rounded-[var(--radius-md)] px-2.5 py-2 w-[140px]" style={{ bottom: "calc(var(--height-statbar) + 16px)" }}>
-        <span className="text-[9px] font-semibold text-[var(--color-text-muted)] tracking-[0.1em] uppercase block mb-1.5">Activiteit</span>
-        <div className="h-1.5 rounded-[3px] w-full" style={{ background: "linear-gradient(to right, #1c2128, #1a5578, #e8b84b, #d97c2a)" }} />
-        <div className="flex justify-between mt-1 text-[9px] text-[var(--color-text-muted)]">
+      <div
+        style={{
+          position: "absolute",
+          left: 12,
+          bottom: "calc(var(--statbar-h) + 12px)",
+          background: "var(--bg-raised)",
+          border: "0.5px solid var(--border)",
+          borderRadius: "var(--r-lg)",
+          padding: "8px 10px",
+          width: 148,
+          zIndex: 20,
+        }}
+      >
+        <span
+          style={{
+            display: "block",
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--text-lo)",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 6,
+          }}
+        >
+          Tenderactiviteit
+        </span>
+        <div
+          style={{
+            height: 6,
+            borderRadius: 3,
+            background:
+              "linear-gradient(to right,#0e1318,#1a7a96,#e8b84b,#d97c2a)",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: 4,
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--text-lo)",
+          }}
+        >
           <span>laag</span>
           <span>hoog</span>
         </div>
@@ -201,53 +279,232 @@ export function ChoroplethMap({ data, selected, onSelect, isLoading }: Choroplet
 
       {/* Loading overlay */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center gap-3 bg-[rgba(13,17,23,0.6)] text-[13px] text-[var(--color-text-secondary)] z-50">
-          <span className="w-5 h-5 border-2 border-[var(--color-border-subtle)] border-t-[var(--color-accent)] rounded-full animate-spin shrink-0" />
-          Pijplijndata laden...
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(8,12,16,0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            fontSize: 13,
+            color: "var(--text-mid)",
+            zIndex: 50,
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <span
+            style={{
+              width: 18,
+              height: 18,
+              border: "2px solid var(--border-mid)",
+              borderTopColor: "var(--accent)",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
+            }}
+          />
+          Kaartdata laden…
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
     </div>
   );
 }
 
-function BottleneckBadge({ signal }: { signal: "ok" | "warn" | "alert" }) {
-  const labels = { ok: "ok", warn: "let op", alert: "knelpunt" };
+// ─── Province info card ──────────────────────────────────────────────────
+
+function ProvinceCard({
+  province: p,
+  onClose,
+}: {
+  province: ProvinceMetrics;
+  onClose: () => void;
+}) {
+  const signalColor = {
+    ok: "var(--ok)",
+    warn: "var(--warn)",
+    alert: "var(--alert)",
+  }[p.bottleneckSignal];
+  const signalLabel = { ok: "OK", warn: "Let op", alert: "Knelpunt" }[
+    p.bottleneckSignal
+  ];
+  const trendLabel = {
+    growing: "groeiend↑",
+    stable: "stabiel→",
+    shrinking: "krimpend↓",
+  }[p.trend];
+  const trendColor = {
+    growing: "var(--ok)",
+    stable: "var(--text-mid)",
+    shrinking: "var(--alert)",
+  }[p.trend];
+
   return (
-    <span className="text-[10px] font-medium" style={{ color: SIGNAL_COLORS[signal] }}>
-      {labels[signal]}
-    </span>
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        right: 12,
+        width: 230,
+        background: "var(--bg-raised)",
+        border: "0.5px solid var(--border-mid)",
+        borderRadius: "var(--r-xl)",
+        padding: "14px 16px",
+        zIndex: 20,
+        boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 12,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: "var(--text-hi)",
+              marginBottom: 2,
+            }}
+          >
+            {p.province}
+          </div>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: signalColor,
+              fontWeight: 500,
+            }}
+          >
+            {signalLabel}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--text-mid)",
+            padding: 2,
+            lineHeight: 1,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M1 1L11 11M11 1L1 11"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Metrics */}
+      {[
+        {
+          label: "Actieve tenders",
+          value: p.activeTenderCount.toLocaleString("nl-NL"),
+          color: "var(--accent)",
+        },
+        {
+          label: "Geraamde waarde",
+          value: `€${Math.round(p.estimatedValue / 1_000_000)} M`,
+          color: undefined,
+        },
+        { label: "Trend", value: trendLabel, color: trendColor },
+        ...(p.avgPermitDays
+          ? [
+              {
+                label: "Gem. vergunningsduur",
+                value: `${p.avgPermitDays} dagen`,
+                color: p.avgPermitDays > 150 ? "var(--warn)" : undefined,
+              },
+            ]
+          : []),
+        ...(p.permitGrowthPct
+          ? [
+              {
+                label: "Vergunningsgroei",
+                value: `+${p.permitGrowthPct.toFixed(1)}%`,
+                color: "var(--ok)",
+              },
+            ]
+          : []),
+      ].map((row) => (
+        <div
+          key={row.label}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "6px 0",
+            borderBottom: "0.5px solid var(--border)",
+          }}
+        >
+          <span style={{ fontSize: 11, color: "var(--text-mid)" }}>
+            {row.label}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 500,
+              color: row.color ?? "var(--text-hi)",
+            }}
+          >
+            {row.value}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
-async function fetchProvinceGeoJSON(data: PipelineData): Promise<GeoJSON.FeatureCollection> {
+// ─── Map data update ─────────────────────────────────────────────────────
+
+async function updateMap(map: maplibregl.Map, data: PipelineData) {
   try {
     const url =
       "https://service.pdok.nl/cbs/gebiedsindelingen/2024/wfs/v1_0?" +
       "service=WFS&version=2.0.0&request=GetFeature" +
       "&typeName=cbs_provincie_2024_gegeneraliseerd" +
       "&outputFormat=application/json&srsName=EPSG:4326&count=20";
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new Error("PDOK provinces unavailable");
-    const geojson = await res.json() as GeoJSON.FeatureCollection;
 
-    return {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error("PDOK unavailable");
+
+    const geojson = (await res.json()) as FeatureCollection;
+    const enriched: FeatureCollection = {
       ...geojson,
-      features: geojson.features.map(f => {
-        const name    = String((f.properties ?? {})["statnaam"] ?? "");
-        const metrics = data.byProvince.find(p => p.province === name);
+      features: geojson.features.map((f) => {
+        const props = f.properties ?? {};
+        const name = String(props["statnaam"] ?? props["naam"] ?? "");
+        const m = data.byProvince.find((p) => p.province === name);
         return {
           ...f,
           properties: {
-            ...f.properties,
-            province:     name,
-            activityScore: metrics?.activityScore ?? 0,
-            activeTenders: metrics?.activeTenderCount ?? 0,
-            bottleneck:    metrics?.bottleneckSignal ?? "ok",
+            ...props,
+            province: name,
+            activityScore: m?.activityScore ?? 0,
           },
         };
       }),
     };
-  } catch {
-    return { type: "FeatureCollection", features: [] };
+
+    const src = map.getSource("provinces") as
+      | maplibregl.GeoJSONSource
+      | undefined;
+    src?.setData(enriched);
+  } catch (err) {
+    console.warn("Province GeoJSON unavailable:", err);
   }
 }

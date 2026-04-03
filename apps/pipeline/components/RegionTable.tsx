@@ -1,166 +1,543 @@
 "use client";
 
-import { useState } from "react";
-import type { PipelineData, ProvinceMetrics } from "@/lib/pipeline-data";
+import type React from "react";
+import { useState, useMemo } from "react";
+import type { PipelineData, GemeenteMetrics } from "@/lib/types";
 
-type SortKey = "province" | "activeTenderCount" | "estimatedValue" | "trend" | "bottleneckSignal";
-type SortDir = "asc" | "desc";
+type SortKey = keyof Pick<
+  GemeenteMetrics,
+  | "gemeente"
+  | "province"
+  | "activeTenderCount"
+  | "estimatedValue"
+  | "permitsYTD"
+  | "avgPermitDays"
+  | "trend"
+  | "bottleneckSignal"
+>;
 
-interface RegionTableProps {
+interface Props {
   data: PipelineData | null;
   isLoading: boolean;
 }
 
-const SIGNAL_COLORS = {
-  ok:    "var(--color-signal-ok)",
-  warn:  "var(--color-signal-warn)",
-  alert: "var(--color-signal-alert)",
-};
-
-const TREND_COLORS = {
-  growing:   "var(--color-signal-ok)",
-  stable:    "var(--color-text-secondary)",
-  shrinking: "var(--color-signal-alert)",
-};
-
-export function RegionTable({ data, isLoading }: RegionTableProps) {
+export function RegionTable({ data, isLoading }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("activeTenderCount");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [filter, setFilter] = useState("");
+  const [view, setView] = useState<"gemeente" | "provincie">("provincie");
 
-  if (isLoading || !data) {
-    return (
-      <div className="flex-1 flex items-center justify-center gap-3 text-[13px] text-[var(--color-text-secondary)]">
-        <span className="w-5 h-5 border-2 border-[var(--color-border-subtle)] border-t-[var(--color-accent)] rounded-full animate-spin shrink-0" />
-        Regiotabel laden...
-      </div>
-    );
-  }
+  const rows = useMemo(() => {
+    if (!data) return [];
 
-  function handleSort(key: SortKey) {
-    if (key === sortKey) {
-      setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
+    let items =
+      view === "provincie"
+        ? data.byProvince.map(
+            (p) =>
+              ({
+                gemeente: p.province,
+                province: p.province,
+                activeTenderCount: p.activeTenderCount,
+                estimatedValue: p.estimatedValue,
+                permitsYTD: null as number | null,
+                permitsYoYPct: p.permitGrowthPct,
+                avgPermitDays: p.avgPermitDays,
+                trend: p.trend,
+                bottleneckSignal: p.bottleneckSignal,
+              }) satisfies GemeenteMetrics,
+          )
+        : data.byGemeente;
+
+    if (filter.trim()) {
+      const q = filter.toLowerCase();
+      items = items.filter(
+        (r) =>
+          r.gemeente.toLowerCase().includes(q) ||
+          r.province.toLowerCase().includes(q),
+      );
+    }
+
+    return [...items].sort((a, b) => {
+      const av = a[sortKey] as string | number | null;
+      const bv = b[sortKey] as string | number | null;
+      if (av === null || av === undefined) return 1;
+      if (bv === null || bv === undefined) return -1;
+      if (typeof av === "string" && typeof bv === "string") {
+        return sortDir === "asc"
+          ? av.localeCompare(bv, "nl")
+          : bv.localeCompare(av, "nl");
+      }
+      return sortDir === "asc"
+        ? (av as number) - (bv as number)
+        : (bv as number) - (av as number);
+    });
+  }, [data, sortKey, sortDir, filter, view]);
+
+  function handleSort(k: SortKey) {
+    if (k === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
       setSortDir("desc");
     }
   }
 
-  const sorted = [...data.byProvince].sort((a, b) => {
-    const av = a[sortKey] as number | string;
-    const bv = b[sortKey] as number | string;
-    if (typeof av === "string" && typeof bv === "string") {
-      return sortDir === "asc" ? av.localeCompare(bv, "nl") : bv.localeCompare(av, "nl");
-    }
-    return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
-  });
+  if (isLoading || !data) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          color: "var(--text-mid)",
+          fontSize: 13,
+        }}
+      >
+        <span
+          style={{
+            width: 18,
+            height: 18,
+            border: "2px solid var(--border-mid)",
+            borderTopColor: "var(--accent)",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
+        Tabel laden…
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
-  const maxTenders = Math.max(...data.byProvince.map(p => p.activeTenderCount), 1);
+  const maxCount = Math.max(...rows.map((r) => r.activeTenderCount), 1);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--color-surface-base)]">
-      <div className="max-w-[1000px] mx-auto px-6 py-8">
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        overflowY: "auto",
+        background: "var(--bg)",
+      }}
+    >
+      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 24px" }}>
+        {/* Header row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            marginBottom: 18,
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontSize: 20,
+                fontWeight: 600,
+                color: "var(--text-hi)",
+                marginBottom: 4,
+              }}
+            >
+              Regio-overzicht
+            </h1>
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--text-mid)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {rows.length} {view === "provincie" ? "provincies" : "gemeenten"}{" "}
+              · {data.totalTenders} tenders
+              {data.isMockData && (
+                <span style={{ color: "var(--warn)" }}> · voorbeelddata</span>
+              )}
+            </p>
+          </div>
 
-        {/* Header */}
-        <div className="mb-5">
-          <h2 className="text-[16px] font-medium text-[var(--color-text-primary)] mb-1">Regio-overzicht</h2>
-          <p className="text-[11px] text-[var(--color-text-secondary)]">
-            {data.byProvince.length} provincies · {data.totalTenders} tenders
-            {data.isMockData && <span className="text-[var(--color-signal-warn)]"> · voorbeelddata</span>}
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* View toggle */}
+            <div
+              style={{
+                display: "flex",
+                background: "var(--bg-overlay)",
+                border: "0.5px solid var(--border)",
+                borderRadius: "var(--r-md)",
+                padding: "2px 3px",
+                gap: 2,
+              }}
+            >
+              {(["provincie", "gemeente"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    padding: "3px 8px",
+                    borderRadius: "var(--r-sm)",
+                    border: "none",
+                    cursor: "pointer",
+                    background: view === v ? "var(--accent)" : "transparent",
+                    color: view === v ? "#0a0a0a" : "var(--text-mid)",
+                    fontWeight: view === v ? 600 : 400,
+                  }}
+                >
+                  {v.charAt(0).toUpperCase() + v.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Search */}
+            <input
+              type="search"
+              placeholder="Zoeken…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              style={{
+                background: "var(--bg-overlay)",
+                border: "0.5px solid var(--border)",
+                borderRadius: "var(--r-md)",
+                padding: "5px 10px",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--text-hi)",
+                outline: "none",
+                width: 160,
+              }}
+            />
+          </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto border border-[var(--color-border-subtle)] rounded-[var(--radius-lg)]">
-          <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
+        <div
+          style={{
+            border: "0.5px solid var(--border)",
+            borderRadius: "var(--r-lg)",
+            overflow: "hidden",
+            overflowX: "auto",
+          }}
+        >
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              tableLayout: "fixed",
+            }}
+          >
             <thead>
-              <tr>
-                <SortHeader label="Provincie"       sortKey="province"          current={sortKey} dir={sortDir} onSort={handleSort} />
-                <SortHeader label="Actieve tenders" sortKey="activeTenderCount" current={sortKey} dir={sortDir} onSort={handleSort} align="right" />
-                <SortHeader label="Waarde (M€)"     sortKey="estimatedValue"    current={sortKey} dir={sortDir} onSort={handleSort} align="right" />
-                <SortHeader label="Trend"           sortKey="trend"             current={sortKey} dir={sortDir} onSort={handleSort} align="center" />
-                <SortHeader label="Signaal"         sortKey="bottleneckSignal"  current={sortKey} dir={sortDir} onSort={handleSort} align="center" />
-                <th className="px-3.5 py-2.5 text-[10px] font-semibold text-[var(--color-text-secondary)] tracking-[0.08em] uppercase bg-[var(--color-surface-raised)] border-b border-[var(--color-border-subtle)] text-left">
+              <tr style={{ background: "var(--bg-raised)" }}>
+                <Th
+                  label={view === "provincie" ? "Provincie" : "Gemeente"}
+                  k="gemeente"
+                  current={sortKey}
+                  dir={sortDir}
+                  onSort={handleSort}
+                  width={180}
+                />
+                {view === "gemeente" && (
+                  <Th
+                    label="Provincie"
+                    k="province"
+                    current={sortKey}
+                    dir={sortDir}
+                    onSort={handleSort}
+                    width={130}
+                    align="left"
+                  />
+                )}
+                <Th
+                  label="Tenders"
+                  k="activeTenderCount"
+                  current={sortKey}
+                  dir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                  width={80}
+                />
+                <Th
+                  label="Waarde (M€)"
+                  k="estimatedValue"
+                  current={sortKey}
+                  dir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                  width={100}
+                />
+                <Th
+                  label="Verg. doorlooptijd"
+                  k="avgPermitDays"
+                  current={sortKey}
+                  dir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                  width={130}
+                />
+                <Th
+                  label="Trend"
+                  k="trend"
+                  current={sortKey}
+                  dir={sortDir}
+                  onSort={handleSort}
+                  align="center"
+                  width={90}
+                />
+                <Th
+                  label="Signaal"
+                  k="bottleneckSignal"
+                  current={sortKey}
+                  dir={sortDir}
+                  onSort={handleSort}
+                  align="center"
+                  width={90}
+                />
+                <th style={{ ...thBase, width: 110, textAlign: "left" }}>
                   Pipeline
                 </th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map(p => (
-                <RegionRow key={p.province} metrics={p} maxTenders={maxTenders} />
+              {rows.map((r) => (
+                <TableRow
+                  key={`${r.gemeente}-${r.province}`}
+                  row={r}
+                  maxCount={maxCount}
+                  showProvince={view === "gemeente"}
+                />
               ))}
             </tbody>
           </table>
         </div>
 
-        <p className="mt-4 text-[10px] text-[var(--color-text-muted)] leading-relaxed">
-          Alleen publiek aanbestede projecten. Private sector opdrachten zijn niet weergegeven.{" "}
-          <a
-            href="https://github.com/thenorthsolution/lumen/blob/main/apps/lumen-pipeline/TOOL.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--color-accent)] no-underline hover:underline"
+        {/* Honest framing note */}
+        <div
+          style={{
+            marginTop: 20,
+            padding: "12px 16px",
+            background: "var(--bg-raised)",
+            border: "0.5px solid var(--border)",
+            borderRadius: "var(--r-lg)",
+            display: "flex",
+            gap: 10,
+            alignItems: "flex-start",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 14,
+              color: "var(--text-mid)",
+              flexShrink: 0,
+              marginTop: 1,
+            }}
           >
-            Zie TOOL.md voor de volledige methodologie.
-          </a>
-        </p>
+            ⓘ
+          </span>
+          <p
+            style={{ fontSize: 11, color: "var(--text-mid)", lineHeight: 1.7 }}
+          >
+            Dit overzicht toont uitsluitend publiek aanbestede projecten (boven
+            Europese drempel ~€5,3M). Particuliere projecten en onderhands
+            gegunde opdrachten zijn niet weergegeven. Gebruik als{" "}
+            <strong style={{ color: "var(--text-hi)" }}>
+              richtinggevend signaal
+            </strong>
+            , niet als volledig beeld.{" "}
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              style={{ color: "var(--accent)", textDecoration: "none" }}
+            >
+              Zie methodologie →
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
-function SortHeader({ label, sortKey, current, dir, onSort, align = "left" }: {
+const thBase: React.CSSProperties = {
+  padding: "9px 12px",
+  fontSize: 9,
+  fontWeight: 600,
+  fontFamily: "var(--font-mono)",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--text-mid)",
+  borderBottom: "0.5px solid var(--border)",
+  whiteSpace: "nowrap",
+};
+
+function Th({
+  label,
+  k,
+  current,
+  dir,
+  onSort,
+  align = "left",
+  width,
+}: {
   label: string;
-  sortKey: SortKey;
+  k: SortKey;
   current: SortKey;
-  dir: SortDir;
+  dir: "asc" | "desc";
   onSort: (k: SortKey) => void;
   align?: "left" | "right" | "center";
+  width?: number;
 }) {
-  const isActive = current === sortKey;
+  const active = current === k;
   return (
     <th
-      className={[
-        "px-3.5 py-2.5 text-[10px] font-semibold tracking-[0.08em] uppercase bg-[var(--color-surface-raised)] border-b border-[var(--color-border-subtle)] cursor-pointer select-none whitespace-nowrap transition-colors hover:text-[var(--color-text-primary)]",
-        isActive ? "text-[var(--color-accent)]" : "text-[var(--color-text-secondary)]",
-      ].join(" ")}
-      style={{ textAlign: align }}
-      onClick={() => onSort(sortKey)}
-      aria-sort={isActive ? (dir === "asc" ? "ascending" : "descending") : "none"}
+      onClick={() => onSort(k)}
+      style={{
+        ...thBase,
+        textAlign: align,
+        width,
+        cursor: "pointer",
+        color: active ? "var(--accent)" : "var(--text-mid)",
+      }}
     >
       {label}
-      {isActive && <span className="text-[10px]">{dir === "asc" ? " ↑" : " ↓"}</span>}
+      {active && (
+        <span style={{ marginLeft: 3 }}>{dir === "asc" ? "↑" : "↓"}</span>
+      )}
     </th>
   );
 }
 
-function RegionRow({ metrics: p, maxTenders }: { metrics: ProvinceMetrics; maxTenders: number }) {
-  const barWidth   = Math.round((p.activeTenderCount / maxTenders) * 100);
-  const trendLabel = { growing: "groeiend", stable: "stabiel", shrinking: "krimpend" }[p.trend];
-  const signalLabel = { ok: "ok", warn: "let op", alert: "knelpunt" }[p.bottleneckSignal];
+function TableRow({
+  row: r,
+  maxCount,
+  showProvince,
+}: {
+  row: GemeenteMetrics;
+  maxCount: number;
+  showProvince: boolean;
+}) {
+  const barW = Math.round((r.activeTenderCount / maxCount) * 100);
+  const trendColor = {
+    growing: "var(--ok)",
+    stable: "var(--text-mid)",
+    shrinking: "var(--alert)",
+  }[r.trend];
+  const trendLabel = {
+    growing: "groeiend↑",
+    stable: "stabiel",
+    shrinking: "krimpend↓",
+  }[r.trend];
+  const sigColor = {
+    ok: "var(--ok)",
+    warn: "var(--warn)",
+    alert: "var(--alert)",
+  }[r.bottleneckSignal];
+  const sigLabel = { ok: "ok", warn: "let op", alert: "knelpunt" }[
+    r.bottleneckSignal
+  ];
+
+  const tdBase: React.CSSProperties = {
+    padding: "8px 12px",
+    fontSize: 12,
+    borderBottom: "0.5px solid var(--border)",
+    verticalAlign: "middle",
+  };
 
   return (
-    <tr className="border-b border-[var(--color-border-subtle)] last:border-b-0 transition-colors hover:bg-[var(--color-surface-hover)]">
-      <td className="px-3.5 py-2.5 text-[12px] text-[var(--color-text-primary)] font-medium">{p.province}</td>
-      <td className="px-3.5 py-2.5 text-[12px] text-[var(--color-accent)] font-medium text-right">{p.activeTenderCount}</td>
-      <td className="px-3.5 py-2.5 text-[12px] text-[var(--color-text-secondary)] text-right">
-        {Math.round(p.estimatedValue / 1_000_000).toLocaleString("nl-NL")}
+    <tr
+      style={{ transition: "background 0.1s" }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background = "var(--bg-hover)")
+      }
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      <td style={{ ...tdBase, color: "var(--text-hi)", fontWeight: 500 }}>
+        {r.gemeente}
       </td>
-      <td className="px-3.5 py-2.5 text-center">
-        <span className="text-[11px]" style={{ color: TREND_COLORS[p.trend] }}>{trendLabel}</span>
+      {showProvince && (
+        <td style={{ ...tdBase, color: "var(--text-mid)" }}>{r.province}</td>
+      )}
+      <td
+        style={{
+          ...tdBase,
+          textAlign: "right",
+          color: "var(--accent)",
+          fontFamily: "var(--font-mono)",
+          fontWeight: 500,
+        }}
+      >
+        {r.activeTenderCount}
       </td>
-      <td className="px-3.5 py-2.5 text-center">
+      <td
+        style={{
+          ...tdBase,
+          textAlign: "right",
+          color: "var(--text-mid)",
+          fontFamily: "var(--font-mono)",
+        }}
+      >
+        {Math.round(r.estimatedValue / 1_000_000).toLocaleString("nl-NL")}
+      </td>
+      <td
+        style={{
+          ...tdBase,
+          textAlign: "right",
+          fontFamily: "var(--font-mono)",
+          color:
+            r.avgPermitDays && r.avgPermitDays > 150
+              ? "var(--warn)"
+              : "var(--text-mid)",
+        }}
+      >
+        {r.avgPermitDays ? `${r.avgPermitDays}d` : "—"}
+      </td>
+      <td style={{ ...tdBase, textAlign: "center" }}>
         <span
-          className="text-[10px] font-medium px-1.5 py-0.5 rounded-lg border border-current inline-block"
-          style={{ color: SIGNAL_COLORS[p.bottleneckSignal] }}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: trendColor,
+          }}
         >
-          {signalLabel}
+          {trendLabel}
         </span>
       </td>
-      <td className="px-3.5 py-2.5">
-        <div className="h-1 bg-[var(--color-surface-overlay)] rounded-sm overflow-hidden min-w-[80px]">
+      <td style={{ ...tdBase, textAlign: "center" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 500,
+            padding: "2px 7px",
+            borderRadius: "var(--r-xl)",
+            border: `0.5px solid ${sigColor}`,
+            color: sigColor,
+            display: "inline-block",
+          }}
+        >
+          {sigLabel}
+        </span>
+      </td>
+      <td style={{ ...tdBase }}>
+        <div
+          style={{
+            height: 4,
+            background: "var(--bg-overlay)",
+            borderRadius: 2,
+            overflow: "hidden",
+            minWidth: 80,
+          }}
+        >
           <div
-            className="h-full bg-[var(--color-accent)] rounded-sm transition-[width] duration-300"
-            style={{ width: `${barWidth}%` }}
+            style={{
+              height: "100%",
+              width: `${barW}%`,
+              background: "var(--accent)",
+              borderRadius: 2,
+              transition: "width 0.3s",
+            }}
           />
         </div>
       </td>

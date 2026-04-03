@@ -1,53 +1,143 @@
 "use client";
 
-import type { PipelineData } from "@/lib/pipeline-data";
+import type { PipelineData } from "@/lib/types";
 
 interface StatBarProps {
   data: PipelineData | null;
 }
 
 export function StatBar({ data }: StatBarProps) {
-  const alertCount   = data?.byProvince.filter(p => p.bottleneckSignal === "alert").length  ?? 0;
-  const warningCount = data?.byProvince.filter(p => p.bottleneckSignal === "warn").length   ?? 0;
-  const growingCount = data?.byProvince.filter(p => p.trend === "growing").length           ?? 0;
+  const alerts =
+    data?.byProvince.filter((p) => p.bottleneckSignal === "alert").length ?? 0;
+  const warns =
+    data?.byProvince.filter((p) => p.bottleneckSignal === "warn").length ?? 0;
+  const growing =
+    data?.byProvince.filter((p) => p.trend === "growing").length ?? 0;
 
-  const updatedLabel = data
-    ? new Date(data.lastUpdated).toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" })
+  const updated = data
+    ? new Date(data.lastUpdated).toLocaleDateString("nl-NL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
     : "—";
 
   return (
-    <div className="h-[44px] bg-[var(--color-surface-raised)] border-t border-[var(--color-border-subtle)] flex items-center px-4 shrink-0 z-10">
-      <Stat value={data?.totalTenders.toLocaleString("nl-NL") ?? "—"}              label="Totaal tenders"     color="var(--color-accent)" />
+    <footer
+      style={{
+        height: "var(--statbar-h)",
+        background: "var(--bg-raised)",
+        borderTop: "0.5px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 16px",
+        flexShrink: 0,
+        zIndex: 10,
+        gap: 0,
+      }}
+    >
+      <StatItem
+        value={data?.totalTenders.toLocaleString("nl-NL") ?? "—"}
+        label="Tenders"
+        color="var(--accent)"
+      />
       <Divider />
-      <Stat value={`€${data?.totalValueMillions.toLocaleString("nl-NL") ?? "—"} M`} label="Geschatte waarde" />
+      <StatItem
+        value={data ? `€${data.totalValueM.toLocaleString("nl-NL")} M` : "—"}
+        label="Geraamde waarde"
+      />
       <Divider />
-      <Stat value={String(alertCount)}   label="Knelpunten"        color={alertCount   > 0 ? "var(--color-signal-alert)" : undefined} />
+      <StatItem
+        value={String(alerts)}
+        label="Knelpunten"
+        color={alerts > 0 ? "var(--alert)" : undefined}
+      />
       <Divider />
-      <Stat value={String(warningCount)} label="Aandachtspunten"   color={warningCount > 0 ? "var(--color-signal-warn)"  : undefined} />
+      <StatItem
+        value={String(warns)}
+        label="Let op"
+        color={warns > 0 ? "var(--warn)" : undefined}
+      />
       <Divider />
-      <Stat value={String(growingCount)} label="Groeiende regio's" color={growingCount > 0 ? "var(--color-signal-ok)"   : undefined} />
+      <StatItem
+        value={String(growing)}
+        label="Groeiende regio's"
+        color={growing > 0 ? "var(--ok)" : undefined}
+      />
 
-      <div className="flex-1" />
+      <div style={{ flex: 1 }} />
 
-      <div className="flex flex-col gap-px text-right">
-        <span className="text-[11px] text-[var(--color-text-secondary)] leading-none">
-          TenderNed · {updatedLabel}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          textAlign: "right",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--text-mid)",
+          }}
+        >
+          TenderNed · {updated}
         </span>
-        <span className="text-[9px] text-[var(--color-text-muted)] tracking-[0.08em] uppercase leading-none">
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--text-lo)",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}
+        >
           {data?.isMockData ? "voorbeelddata" : "live data"}
         </span>
       </div>
-    </div>
+    </footer>
   );
 }
 
-function Stat({ value, label, color }: { value: string; label: string; color?: string }) {
+function StatItem({
+  value,
+  label,
+  color,
+}: {
+  value: string;
+  label: string;
+  color?: string | undefined;
+}) {
   return (
-    <div className="flex flex-col gap-px px-4">
-      <span className="text-[13px] font-medium leading-none" style={{ color: color ?? "var(--color-text-primary)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+        padding: "0 14px",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          fontWeight: 500,
+          lineHeight: 1,
+          color: color ?? "var(--text-hi)",
+        }}
+      >
         {value}
       </span>
-      <span className="text-[9px] text-[var(--color-text-secondary)] tracking-[0.08em] uppercase leading-none">
+      <span
+        style={{
+          fontSize: 9,
+          color: "var(--text-mid)",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          lineHeight: 1,
+        }}
+      >
         {label}
       </span>
     </div>
@@ -55,5 +145,14 @@ function Stat({ value, label, color }: { value: string; label: string; color?: s
 }
 
 function Divider() {
-  return <div className="w-px h-6 bg-[var(--color-border-subtle)] shrink-0" />;
+  return (
+    <div
+      style={{
+        width: 0.5,
+        height: 22,
+        background: "var(--border)",
+        flexShrink: 0,
+      }}
+    />
+  );
 }

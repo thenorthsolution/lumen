@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
+import type React from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lumen Pipeline — Bouwpijplijn Nederland",
+  title: "Bouwcapaciteitcheck — Bouwpijplijn Nederland",
   description:
-    "Regionaal overzicht van bouwactiviteit, tenderpijplijn en capaciteitsknelpunten in de Nederlandse woningbouw. Gratis en open.",
-  keywords: ["bouwcapaciteit", "woningbouw", "bouwpijplijn", "CBS bouwvolume"],
+    "Gratis, open instrument dat regionale bouwactiviteit en capaciteitsknelpunten zichtbaar maakt. Aanbestedingsdata van TenderNed, vergunningdata van Omgevingsloket.",
+  keywords: [
+    "bouwcapaciteit",
+    "woningbouw",
+    "bouwpijplijn",
+    "TenderNed",
+    "bouwvergunningen",
+  ],
   openGraph: {
-    title: "Lumen Pipeline",
+    title: "Bouwcapaciteitcheck",
     description: "Bouwpijplijn en capaciteitsknelpunten zichtbaar maken",
-    url: "https://lumenpipeline.nl",
-    siteName: "Lumen Pipeline",
+    url: "https://bouwcapaciteitcheck.nl",
+    siteName: "Bouwcapaciteitcheck",
     locale: "nl_NL",
   },
 };
@@ -21,8 +28,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="nl" suppressHydrationWarning>
+    <html lang="nl" suppressHydrationWarning className="dark">
       <head>
+        <link rel="preconnect" href="https://www.tenderned.nl" />
         <link rel="preconnect" href="https://opendata.cbs.nl" />
       </head>
       <body>{children}</body>
