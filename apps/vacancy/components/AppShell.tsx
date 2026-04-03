@@ -7,7 +7,11 @@ import { MapCanvas } from "./MapCanvas";
 import { DetailPanel } from "./DetailPanel";
 import { StatBar } from "./StatBar";
 import { getDefaultGemeente } from "@lumen/pdok-client";
-import type { ViabilityScore } from "@lumen/bag-utils";
+import {
+  ALL_PAND_STATUSES,
+  ALL_VBO_STATUSES,
+  type ViabilityScore,
+} from "@lumen/bag-utils";
 import type { FeatureCollection, Feature, Geometry } from "geojson";
 
 import styles from "./AppShell.module.css";
@@ -19,15 +23,21 @@ export type LayerVisibility = {
   percelen: boolean;
 };
 
+export type BasemapMode = "brt" | "luchtfoto" | "hybrid";
+
 export type FilterState = {
   bouwjaarMin: number;
   oppervlakteMin: number;
   gebruiksdoelen: string[];
+  vboStatuses: string[];
+  pandStatuses: string[];
 };
 
 export interface VboFeatureProperties {
   identificatie: string;
   status: string;
+  pandStatus?: string;
+  bagUri?: string;
   gebruiksdoel: string;
   oppervlakte: number;
   bouwjaar: number;
@@ -42,21 +52,30 @@ export type VboFeatureCollection = FeatureCollection<
 >;
 
 const DEFAULT_FILTERS: FilterState = {
-  bouwjaarMin: 1990,
-  oppervlakteMin: 500,
-  gebruiksdoelen: ["kantoorfunctie", "winkelfunctie"],
+  bouwjaarMin: 0,
+  oppervlakteMin: 0,
+  gebruiksdoelen: [
+    "kantoorfunctie",
+    "winkelfunctie",
+    "bijeenkomstfunctie",
+    "onderwijsfunctie",
+    "industriefunctie",
+  ],
+  vboStatuses: [...ALL_VBO_STATUSES],
+  pandStatuses: [...ALL_PAND_STATUSES],
 };
 
 const DEFAULT_LAYERS: LayerVisibility = {
   hoog: true,
   middel: true,
-  laag: false,
+  laag: true,
   percelen: true,
 };
 
 export function AppShell() {
   const [gemeente, setGemeente] = useState(getDefaultGemeente());
   const [layers, setLayers] = useState<LayerVisibility>(DEFAULT_LAYERS);
+  const [basemap, setBasemap] = useState<BasemapMode>("brt");
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedFeature, setSelectedFeature] = useState<VboFeature | null>(
     null,
@@ -95,6 +114,8 @@ export function AppShell() {
 
       <div className={styles.body}>
         <SidePanel
+          basemap={basemap}
+          onBasemapChange={setBasemap}
           layers={layers}
           onLayersChange={setLayers}
           filters={filters}
@@ -104,6 +125,7 @@ export function AppShell() {
 
         <MapCanvas
           gemeente={gemeente}
+          basemap={basemap}
           layers={layers}
           filters={filters}
           onFeatureSelect={handleFeatureSelect}

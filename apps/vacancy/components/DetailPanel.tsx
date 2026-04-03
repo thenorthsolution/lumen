@@ -18,6 +18,11 @@ export function DetailPanel({ feature, onClose }: DetailPanelProps) {
   const { properties: props } = feature;
   const score = props?.score;
   const tier = score?.tier ?? "laag";
+  const showThreeDAction = tier === "hoog" || tier === "middel";
+  const bagViewerUrl = props?.identificatie
+    ? `https://bagviewer.kadaster.nl/lvbag/bag-viewer/?objectId=${props.identificatie}`
+    : null;
+  const pdok3dUrl = "https://www.pdok.nl/3d-viewer";
 
   function handleFlag(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +85,7 @@ export function DetailPanel({ feature, onClose }: DetailPanelProps) {
           label="Gebruiksdoel"
           value={formatGebruiksdoel(props?.gebruiksdoel ?? "")}
         />
+        <DataRow label="Pandstatus" value={props?.pandStatus ?? "—"} />
         <DataRow label="Bouwjaar" value={String(props?.bouwjaar ?? "—")} />
         <DataRow
           label="Vloeroppervlak"
@@ -89,6 +95,51 @@ export function DetailPanel({ feature, onClose }: DetailPanelProps) {
               : "—"
           }
         />
+      </div>
+
+      <div className={styles.actionsSection}>
+        <div className={styles.actionsHeader}>
+          <span className={styles.actionsLabel}>Verdiepen</span>
+        </div>
+        <div className={styles.actionGrid}>
+          {bagViewerUrl && (
+            <a
+              href={bagViewerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.actionBtn}
+            >
+              Bekijk in BAG Viewer
+            </a>
+          )}
+          {showThreeDAction && (
+            <a
+              href={pdok3dUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.actionBtn}
+            >
+              Open PDOK 3D Viewer
+            </a>
+          )}
+          {props?.bagUri && (
+            <a
+              href={props.bagUri}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.actionBtnGhost}
+            >
+              Open bronrecord
+            </a>
+          )}
+        </div>
+        {(showThreeDAction || props?.bagUri) && (
+          <p className={styles.actionsNote}>
+            BAG Viewer opent direct het object. De PDOK 3D Viewer geeft 3D
+            context voor de omgeving; exacte objectkoppeling is daar nog niet
+            doorgelinkt.
+          </p>
+        )}
       </div>
 
       {/* Score breakdown */}

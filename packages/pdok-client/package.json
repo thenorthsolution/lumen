@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
+    "sync-gemeenten": "node ./scripts/sync-gemeenten.mjs",
     "type-check": "tsc --noEmit",
     "lint": "eslint src/"
   },

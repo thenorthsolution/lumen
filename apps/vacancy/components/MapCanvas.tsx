@@ -4,16 +4,22 @@ import { useEffect, useRef, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import type { Gemeente } from "@lumen/pdok-client";
 import type {
+  BasemapMode,
   LayerVisibility,
   FilterState,
   VboFeature,
   VboFeatureCollection,
 } from "./AppShell";
-import { fetchAndScoreGemeente } from "@/lib/bag-fetch";
+import { fetchAndScoreGemeente, fetchPandGeometries } from "@/lib/bag-fetch";
 import styles from "./MapCanvas.module.css";
 
 // MapLibre source/layer IDs
 const SOURCE_LEEGSTAND = "leegstand";
+const SOURCE_PANDEN = "panden";
+const SOURCE_BRT = "brt";
+const SOURCE_LUCHTFOTO = "luchtfoto";
+const LAYER_BRT = "brt-tiles";
+const LAYER_LUCHTFOTO = "luchtfoto-tiles";
 const LAYER_HOOG = "leegstand-hoog";
 const LAYER_MIDDEL = "leegstand-middel";
 const LAYER_LAAG = "leegstand-laag";
@@ -30,6 +36,7 @@ const COLORS = {
 
 interface MapCanvasProps {
   gemeente: Gemeente;
+  basemap: BasemapMode;
   layers: LayerVisibility;
   filters: FilterState;
   selectedFeatureId: string | null;
@@ -40,6 +47,7 @@ interface MapCanvasProps {
 
 export function MapCanvas({
   gemeente,
+  basemap,
   layers,
   filters,
   selectedFeatureId,
@@ -50,6 +58,7 @@ export function MapCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const pandAbortRef = useRef<AbortController | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
 
   // Initialise map once
@@ -80,6 +89,11 @@ export function MapCanvas({
     );
 
     map.on("load", () => {
+      map.addSource(SOURCE_PANDEN, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+
       // Add empty source — data loaded separately
       map.addSource(SOURCE_LEEGSTAND, {
         type: "geojson",
@@ -87,39 +101,60 @@ export function MapCanvas({
         generateId: true,
       });
 
-      // Polygon fill layers per tier — colours must be hex, NOT CSS vars
-      addPolygonLayer(
+      map.addLayer({
+        id: LAYER_PERCELEN,
+        type: "fill",
+        source: SOURCE_PANDEN,
+        paint: {
+          "fill-color": "#f0f6fc",
+          "fill-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            0.04,
+            15,
+            0.1,
+          ],
+          "fill-outline-color": "#8b949e",
+        },
+      });
+
+      // Render BAG verblijfsobjecten as point markings.
+      // These features do not provide polygon footprints suitable for fill layers.
+      addCircleLayer(
         map,
         LAYER_LAAG,
         COLORS.laag,
-        0.35,
+        5,
         SOURCE_LEEGSTAND,
         "laag",
       );
-      addPolygonLayer(
+      addCircleLayer(
         map,
         LAYER_MIDDEL,
         COLORS.middel,
-        0.55,
+        7,
         SOURCE_LEEGSTAND,
         "middel",
       );
-      addPolygonLayer(
+      addCircleLayer(
         map,
         LAYER_HOOG,
         COLORS.hoog,
-        0.7,
+        9,
         SOURCE_LEEGSTAND,
         "hoog",
       );
 
-      // Outline for selected / hoog
+      // Outline for selected / higher-scored objects
       map.addLayer({
         id: LAYER_HOOG_OUTLINE,
-        type: "line",
+        type: "circle",
         source: SOURCE_LEEGSTAND,
         paint: {
-          "line-color": [
+          "circle-color": "transparent",
+          "circle-stroke-color": [
             "case",
             ["==", ["get", "identificatie"], selectedFeatureId ?? ""],
             COLORS.selected,
@@ -127,13 +162,21 @@ export function MapCanvas({
             COLORS.hoog,
             COLORS.middel,
           ],
-          "line-width": [
+          "circle-stroke-width": [
             "case",
             ["==", ["get", "identificatie"], selectedFeatureId ?? ""],
-            2,
-            1,
+            3,
+            1.5,
           ],
-          "line-opacity": 0.9,
+          "circle-radius": [
+            "case",
+            ["==", ["get", "identificatie"], selectedFeatureId ?? ""],
+            12,
+            ["==", ["get", "score_tier"], "hoog"],
+            11,
+            9,
+          ],
+          "circle-opacity": 1,
         },
         filter: ["in", ["get", "score_tier"], ["literal", ["hoog", "middel"]]],
       });
@@ -152,6 +195,8 @@ export function MapCanvas({
             properties: {
               identificatie: String(props["identificatie"] ?? ""),
               status: String(props["status"] ?? ""),
+              pandStatus: String(props["pandStatus"] ?? ""),
+              bagUri: String(props["bagUri"] ?? ""),
               gebruiksdoel: String(props["gebruiksdoel"] ?? ""),
               oppervlakte: Number(props["oppervlakte"] ?? 0),
               bouwjaar: Number(props["bouwjaar"] ?? 0),
@@ -192,59 +237,145 @@ export function MapCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fly to gemeente on change and reload data
+  // Keep building footprints aligned with the current viewport.
+  // The gemeente selector only changes focus; panning/zooming updates context.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    map.flyTo({
-      center: gemeente.centroid,
-      zoom: gemeente.zoom,
-      duration: 1200,
-      essential: true,
-    });
+    const loadViewportPanden = () => {
+      const source = map.getSource(SOURCE_PANDEN) as
+        | maplibregl.GeoJSONSource
+        | undefined;
+      if (!source) return;
 
-    abortRef.current?.abort();
+      pandAbortRef.current?.abort();
+      const controller = new AbortController();
+      pandAbortRef.current = controller;
+
+      fetchPandGeometries(getMapBBox(map), controller.signal)
+        .then((pandFc) => {
+          if (controller.signal.aborted) return;
+          source.setData(pandFc);
+        })
+        .catch((err) => {
+          if ((err as Error).name !== "AbortError") {
+            console.error("BAG panden fetch fout:", err);
+          }
+        });
+    };
+
+    if (map.isStyleLoaded() && map.getSource(SOURCE_PANDEN)) {
+      loadViewportPanden();
+    } else {
+      map.once("load", loadViewportPanden);
+    }
+
+    map.on("moveend", loadViewportPanden);
+
+    return () => {
+      pandAbortRef.current?.abort();
+      map.off("moveend", loadViewportPanden);
+      map.off("load", loadViewportPanden);
+    };
+  }, []);
+
+  // Fly to gemeente on change and reload shortlist data
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
     const controller = new AbortController();
+    abortRef.current?.abort();
     abortRef.current = controller;
 
-    onLoadStart();
+    const loadData = () => {
+      if (controller.signal.aborted) return;
 
-    fetchAndScoreGemeente(gemeente, filters, controller.signal)
-      .then((fc) => {
-        if (controller.signal.aborted) return;
-
-        const source = map.getSource(SOURCE_LEEGSTAND) as
-          | maplibregl.GeoJSONSource
-          | undefined;
-        if (source) {
-          const flat = {
-            ...fc,
-            features: fc.features.map((f) => ({
-              ...f,
-              properties: {
-                ...f.properties,
-                score_tier: f.properties?.score?.tier ?? "laag",
-                score: JSON.stringify(f.properties?.score),
-              },
-            })),
-          };
-          source.setData(flat);
-        }
-
-        onDataLoaded(fc);
-      })
-      .catch((err) => {
-        if ((err as Error).name !== "AbortError") {
-          console.error("BAG fetch fout:", err);
-        }
+      map.flyTo({
+        center: gemeente.centroid,
+        zoom: gemeente.zoom,
+        duration: 1200,
+        essential: true,
       });
+
+      onLoadStart();
+
+      fetchAndScoreGemeente(gemeente, filters, controller.signal)
+        .then((fc) => {
+          if (controller.signal.aborted) return;
+
+          const source = map.getSource(SOURCE_LEEGSTAND) as
+            | maplibregl.GeoJSONSource
+            | undefined;
+          if (source) {
+            const flat = {
+              ...fc,
+              features: fc.features.map((f) => ({
+                ...f,
+                properties: {
+                  ...f.properties,
+                  score_tier: f.properties?.score?.tier ?? "laag",
+                  score: JSON.stringify(f.properties?.score),
+                },
+              })),
+            };
+            source.setData(flat);
+          }
+
+          onDataLoaded(fc);
+        })
+        .catch((err) => {
+          if ((err as Error).name !== "AbortError") {
+            console.error("BAG fetch fout:", err);
+          }
+        });
+    };
+
+    if (
+      map.isStyleLoaded() &&
+      map.getSource(SOURCE_LEEGSTAND)
+    ) {
+      loadData();
+    } else {
+      map.once("load", loadData);
+    }
 
     return () => {
       controller.abort();
+      map.off("load", loadData);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gemeente, filters]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const visible = "visible" as const;
+    const none = "none" as const;
+
+    map.setLayoutProperty(
+      LAYER_BRT,
+      "visibility",
+      basemap === "luchtfoto" ? none : visible,
+    );
+    map.setPaintProperty(
+      LAYER_BRT,
+      "raster-opacity",
+      basemap === "hybrid" ? 0.45 : 0.25,
+    );
+    map.setLayoutProperty(
+      LAYER_LUCHTFOTO,
+      "visibility",
+      basemap === "brt" ? none : visible,
+    );
+    map.setPaintProperty(
+      LAYER_LUCHTFOTO,
+      "raster-opacity",
+      basemap === "hybrid" ? 0.85 : 1,
+    );
+  }, [basemap]);
 
   // Sync layer visibility
   useEffect(() => {
@@ -278,7 +409,7 @@ export function MapCanvas({
     if (!map || !map.isStyleLoaded()) return;
 
     try {
-      map.setPaintProperty(LAYER_HOOG_OUTLINE, "line-color", [
+      map.setPaintProperty(LAYER_HOOG_OUTLINE, "circle-stroke-color", [
         "case",
         ["==", ["get", "identificatie"], selectedFeatureId ?? "__none__"],
         COLORS.selected,
@@ -286,11 +417,19 @@ export function MapCanvas({
         COLORS.hoog,
         COLORS.middel,
       ]);
-      map.setPaintProperty(LAYER_HOOG_OUTLINE, "line-width", [
+      map.setPaintProperty(LAYER_HOOG_OUTLINE, "circle-stroke-width", [
         "case",
         ["==", ["get", "identificatie"], selectedFeatureId ?? "__none__"],
-        2.5,
-        0.8,
+        3,
+        1.5,
+      ]);
+      map.setPaintProperty(LAYER_HOOG_OUTLINE, "circle-radius", [
+        "case",
+        ["==", ["get", "identificatie"], selectedFeatureId ?? "__none__"],
+        12,
+        ["==", ["get", "score_tier"], "hoog"],
+        11,
+        9,
       ]);
     } catch {
       // Layer may not be ready yet
@@ -314,32 +453,45 @@ export function MapCanvas({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function addPolygonLayer(
+function addCircleLayer(
   map: maplibregl.Map,
   id: string,
   color: string,
-  opacity: number,
+  radius: number,
   source: string,
   tier: string,
 ) {
   map.addLayer({
     id,
-    type: "fill",
+    type: "circle",
     source,
     paint: {
-      "fill-color": color,
-      "fill-opacity": [
+      "circle-color": color,
+      "circle-radius": [
         "interpolate",
         ["linear"],
         ["zoom"],
         10,
-        opacity * 0.6,
+        radius * 0.75,
         15,
-        opacity,
+        radius,
       ],
+      "circle-opacity": 0.85,
+      "circle-stroke-color": "#0d1117",
+      "circle-stroke-width": 1,
     },
     filter: ["==", ["get", "score_tier"], tier],
   });
+}
+
+function getMapBBox(map: maplibregl.Map): Gemeente["bbox"] {
+  const bounds = map.getBounds();
+  return [
+    bounds.getWest(),
+    bounds.getSouth(),
+    bounds.getEast(),
+    bounds.getNorth(),
+  ];
 }
 
 function buildDarkStyle(): maplibregl.StyleSpecification {
@@ -347,13 +499,22 @@ function buildDarkStyle(): maplibregl.StyleSpecification {
     version: 8,
     glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     sources: {
-      brt: {
+      [SOURCE_BRT]: {
         type: "raster",
         tiles: [
           "https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png",
         ],
         tileSize: 256,
         attribution: "© Kadaster / PDOK",
+        maxzoom: 19,
+      },
+      [SOURCE_LUCHTFOTO]: {
+        type: "raster",
+        tiles: [
+          "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_ortho25/EPSG:3857/{z}/{x}/{y}.jpeg",
+        ],
+        tileSize: 256,
+        attribution: "© PDOK / Kadaster",
         maxzoom: 19,
       },
     },
@@ -364,9 +525,22 @@ function buildDarkStyle(): maplibregl.StyleSpecification {
         paint: { "background-color": "#0d1117" },
       },
       {
-        id: "brt-tiles",
+        id: LAYER_LUCHTFOTO,
         type: "raster",
-        source: "brt",
+        source: SOURCE_LUCHTFOTO,
+        layout: {
+          visibility: "none",
+        },
+        paint: {
+          "raster-opacity": 1,
+          "raster-saturation": 0.1,
+          "raster-contrast": 0.05,
+        },
+      },
+      {
+        id: LAYER_BRT,
+        type: "raster",
+        source: SOURCE_BRT,
         paint: {
           "raster-opacity": 0.25,
           "raster-brightness-min": 0,

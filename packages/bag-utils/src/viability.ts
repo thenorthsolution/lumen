@@ -31,6 +31,10 @@ export interface VboInput {
   /** m² gebruiksoppervlakte */
   oppervlakte: number;
   gebruiksdoel: string;
+  /** BAG verblijfsobject status */
+  vboStatus?: string;
+  /** BAG pand status */
+  pandStatus?: string;
   /** WOZ value in euros (optional — improves score accuracy) */
   wozWaarde?: number;
   /** Gemeente median WOZ per m² (optional) */
@@ -135,7 +139,93 @@ export function scoreViability(input: VboInput): ViabilityScore {
     };
   }
 
-  // --- Criterion 1: Bouwjaar ---
+  // --- Criterion 1: Status signal ---
+  let statusPoints = 0;
+  let statusRationale =
+    "Geen aanvullend status-signaal uit BAG. Beoordeel object primair op type, schaal en lokale context.";
+
+  switch (input.vboStatus) {
+    case "Verblijfsobject buiten gebruik":
+      statusPoints += 3;
+      statusRationale =
+        "Object staat administratief buiten gebruik. Dit is het sterkste BAG-signaal voor leegstand of stilstand.";
+      break;
+    case "Verblijfsobject gevormd":
+      statusPoints += 2;
+      statusRationale =
+        "Object is gevormd maar nog niet in gebruik. Dit kan onbenutte of nog niet gerealiseerde capaciteit aanduiden.";
+      break;
+    case "Niet gerealiseerd verblijfsobject":
+      statusPoints += 1;
+      warnings.push(
+        "Niet gerealiseerd verblijfsobject: plan of vergunning is niet tot gebruik gekomen. Controleer waarom ontwikkeling is stilgevallen.",
+      );
+      statusRationale =
+        "Niet gerealiseerde objecten kunnen wijzen op stilgevallen plannen of onbenutte capaciteit.";
+      break;
+    case "Verblijfsobject ingetrokken":
+      statusPoints += 1;
+      warnings.push(
+        "Verblijfsobject ingetrokken: adres of eenheid bestaat niet meer zelfstandig. Controleer of oppervlak of programma elders is samengevoegd.",
+      );
+      statusRationale =
+        "Ingetrokken eenheden kunnen duiden op samengevoegde of verdwenen programmatische capaciteit.";
+      break;
+    case "Verbouwing verblijfsobject":
+      statusPoints -= 2;
+      warnings.push(
+        "Object staat in verbouwing. Dit is minder kansrijk als directe interventie, omdat al aan het pand wordt gewerkt.",
+      );
+      statusRationale =
+        "Actieve verbouwing verlaagt de kans op een directe opportunity, omdat transformatie mogelijk al loopt.";
+      break;
+    case "Verblijfsobject in gebruik":
+    case "Verblijfsobject in gebruik (niet ingemeten)":
+      warnings.push(
+        "BAG markeert dit object als in gebruik. Dat sluit onderbenutting niet uit, maar is geen direct leegstandssignaal.",
+      );
+      statusRationale =
+        "Status in gebruik is geen leegstandsbevestiging, maar sluit onderbenutting of herpositionering niet uit.";
+      break;
+  }
+
+  switch (input.pandStatus) {
+    case "Sloopvergunning verleend":
+      statusPoints += 2;
+      warnings.push(
+        "Pand heeft een sloopvergunning. Dit kan een herontwikkelkans zijn, maar vraagt een andere strategie dan pure gebouwconversie.",
+      );
+      break;
+    case "Bouwvergunning verleend":
+      statusPoints += 1;
+      warnings.push(
+        "Pand heeft een actieve bouwvergunning. Mogelijk bestaat hier nog ongebouwde of wijzigbare capaciteit.",
+      );
+      break;
+    case "Bouw gestart":
+      statusPoints -= 1;
+      warnings.push(
+        "Bouw is gestart. Dit object is minder kansrijk als directe opportunity omdat uitvoering al loopt.",
+      );
+      break;
+    case "Pand gesloopt":
+      statusPoints -= 1;
+      warnings.push(
+        "Pand is al gesloopt. Dit is eerder een grondpositie dan een gebouwconversie-opportunity.",
+      );
+      break;
+  }
+
+  criteria.push({
+    key: "status",
+    label: "Statussignaal",
+    points: statusPoints,
+    maxPoints: 3,
+    rationale: statusRationale,
+    dataSource: "BAG verblijfsobject / pand status",
+  });
+
+  // --- Criterion 2: Bouwjaar ---
   // Post-1990 buildings are closer to current Bouwbesluit standards.
   // Pre-1994 may contain asbestos — flagged as warning.
   let bouwjaarPoints = 0;
@@ -159,7 +249,7 @@ export function scoreViability(input: VboInput): ViabilityScore {
     dataSource: "BAG bouwjaar",
   });
 
-  // --- Criterion 2: Schaal (oppervlakte) ---
+  // --- Criterion 3: Schaal (oppervlakte) ---
   // 500–3000 m² is the optimal range for residential conversion.
   // Too small: uneconomical. Too large: phased conversion complexity.
   let schaalPoints = 0;
@@ -183,7 +273,7 @@ export function scoreViability(input: VboInput): ViabilityScore {
     dataSource: "BAG oppervlakte",
   });
 
-  // --- Criterion 3: WOZ relatief aan gemeente mediaan ---
+  // --- Criterion 4: WOZ relatief aan gemeente mediaan ---
   // Lower WOZ per m² relative to municipality median = lower acquisition cost
   let wozPoints = 0;
   if (

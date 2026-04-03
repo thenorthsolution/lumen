@@ -185,6 +185,13 @@
   transition: background 0.1s;
 }
 
+.resultMain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .resultItem:hover {
   background: var(--surface-overlay);
 }
@@ -201,6 +208,13 @@
 .resultProvince {
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+.resultMeta {
+  font-size: 10px;
+  color: var(--accent-blue);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .noResults {

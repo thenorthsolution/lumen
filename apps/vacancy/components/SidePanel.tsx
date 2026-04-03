@@ -1,11 +1,16 @@
 "use client";
 
 import type {
+  BasemapMode,
   LayerVisibility,
   FilterState,
   VboFeatureCollection,
 } from "./AppShell";
-import { countByTier } from "@lumen/bag-utils";
+import {
+  ALL_PAND_STATUSES,
+  ALL_VBO_STATUSES,
+  countByTier,
+} from "@lumen/bag-utils";
 import styles from "./SidePanel.module.css";
 
 const GEBRUIKSDOEL_OPTIONS = [
@@ -16,7 +21,19 @@ const GEBRUIKSDOEL_OPTIONS = [
   { value: "industriefunctie", label: "Industrie" },
 ];
 
+const VBO_STATUS_OPTIONS = ALL_VBO_STATUSES.map((value) => ({
+  value,
+  label: shortStatusLabel(value),
+}));
+
+const PAND_STATUS_OPTIONS = ALL_PAND_STATUSES.map((value) => ({
+  value,
+  label: shortStatusLabel(value),
+}));
+
 interface SidePanelProps {
+  basemap: BasemapMode;
+  onBasemapChange: (mode: BasemapMode) => void;
   layers: LayerVisibility;
   onLayersChange: (l: LayerVisibility) => void;
   filters: FilterState;
@@ -25,6 +42,8 @@ interface SidePanelProps {
 }
 
 export function SidePanel({
+  basemap,
+  onBasemapChange,
   layers,
   onLayersChange,
   filters,
@@ -52,8 +71,37 @@ export function SidePanel({
     onFiltersChange({ ...filters, gebruiksdoelen: next });
   }
 
+  function toggleStatus(key: "vboStatuses" | "pandStatuses", val: string) {
+    const next = filters[key].includes(val)
+      ? filters[key].filter((s) => s !== val)
+      : [...filters[key], val];
+    onFiltersChange({ ...filters, [key]: next });
+  }
+
   return (
     <aside className={styles.panel}>
+      <section className={styles.section}>
+        <h2 className={styles.sectionLabel}>Basemap</h2>
+        <div className={styles.chipWrap}>
+          {[
+            { value: "brt", label: "BRT" },
+            { value: "luchtfoto", label: "Luchtfoto" },
+            { value: "hybrid", label: "Hybrid" },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              className={`${styles.chip} ${
+                basemap === opt.value ? styles.chipActive : ""
+              }`}
+              onClick={() => onBasemapChange(opt.value as BasemapMode)}
+              aria-pressed={basemap === opt.value}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Layer controls */}
       <section className={styles.section}>
         <h2 className={styles.sectionLabel}>Lagen</h2>
@@ -99,9 +147,9 @@ export function SidePanel({
           </div>
           <input
             type="range"
-            min={1960}
+            min={0}
             max={2010}
-            step={5}
+            step={10}
             value={filters.bouwjaarMin}
             onChange={(e) =>
               onFiltersChange({
@@ -112,7 +160,7 @@ export function SidePanel({
             aria-label="Minimum bouwjaar"
           />
           <div className={styles.rangeLabels}>
-            <span>1960</span>
+            <span>0</span>
             <span>2010</span>
           </div>
         </div>
@@ -124,7 +172,7 @@ export function SidePanel({
           </div>
           <input
             type="range"
-            min={100}
+            min={0}
             max={3000}
             step={100}
             value={filters.oppervlakteMin}
@@ -137,7 +185,7 @@ export function SidePanel({
             aria-label="Minimum oppervlak"
           />
           <div className={styles.rangeLabels}>
-            <span>100 m²</span>
+            <span>0 m²</span>
             <span>3.000 m²</span>
           </div>
         </div>
@@ -164,6 +212,44 @@ export function SidePanel({
         </div>
       </section>
 
+      <section className={styles.section}>
+        <h2 className={styles.sectionLabel}>VBO Status</h2>
+        <div className={styles.chipWrap}>
+          {VBO_STATUS_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`${styles.chip} ${
+                filters.vboStatuses.includes(opt.value) ? styles.chipActive : ""
+              }`}
+              onClick={() => toggleStatus("vboStatuses", opt.value)}
+              aria-pressed={filters.vboStatuses.includes(opt.value)}
+              title={opt.value}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionLabel}>Pand Status</h2>
+        <div className={styles.chipWrap}>
+          {PAND_STATUS_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`${styles.chip} ${
+                filters.pandStatuses.includes(opt.value) ? styles.chipActive : ""
+              }`}
+              onClick={() => toggleStatus("pandStatuses", opt.value)}
+              aria-pressed={filters.pandStatuses.includes(opt.value)}
+              title={opt.value}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Methodology note */}
       <div className={styles.methNote}>
         <span className={styles.methLabel}>Methode</span>
@@ -183,6 +269,13 @@ export function SidePanel({
       </div>
     </aside>
   );
+}
+
+function shortStatusLabel(value: string): string {
+  return value
+    .replace(/^Verblijfsobject\s+/i, "")
+    .replace(/^Pand\s+/i, "")
+    .replace(/\s+\(niet ingemeten\)$/i, " (niet ingem.)");
 }
 
 interface LayerRowProps {

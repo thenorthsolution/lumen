@@ -116,7 +116,7 @@ Zie `CONTRIBUTING.md` voor de bijdragerichtlijnen.
 
 ## Licentie
 
-Broncode: MIT  
+Broncode: GNU 3.0  
 Datagebruik: BAG-data is CC0. Gebruik en verdere distributie zijn vrij, zonder attributieverplichting.
 
 ---

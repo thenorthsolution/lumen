@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { searchGemeenten, type Gemeente } from "@lumen/pdok-client";
+import ELIGIBLE_COUNTS from "@/data/eligible-counts.generated.json";
 import styles from "./TopBar.module.css";
 
 interface TopBarProps {
@@ -23,12 +24,12 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
   useEffect(() => {
     if (searchOpen) {
       inputRef.current?.focus();
-      setResults(searchGemeenten("").slice(0, 8));
+      setResults(sortGemeenten(searchGemeenten("")).slice(0, 12));
     }
   }, [searchOpen]);
 
   useEffect(() => {
-    setResults(searchGemeenten(query).slice(0, 8));
+    setResults(sortGemeenten(searchGemeenten(query)).slice(0, 12));
   }, [query]);
 
   useEffect(() => {
@@ -157,8 +158,13 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
                     className={`${styles.resultItem} ${g.code === gemeente.code ? styles.resultItemActive : ""}`}
                     onClick={() => handleSelect(g.code)}
                   >
-                    <span className={styles.resultName}>{g.name}</span>
-                    <span className={styles.resultProvince}>{g.province}</span>
+                    <span className={styles.resultMain}>
+                      <span className={styles.resultName}>{g.name}</span>
+                      <span className={styles.resultProvince}>{g.province}</span>
+                    </span>
+                    <span className={styles.resultMeta}>
+                      {formatEligibleCount(g.code)}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -200,4 +206,26 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
       </a>
     </header>
   );
+}
+
+function formatEligibleCount(code: string): string {
+  const counts = ELIGIBLE_COUNTS.counts as Record<
+    string,
+    { eligibleCount?: number } | undefined
+  >;
+  const value = counts[code]?.eligibleCount;
+  return value === undefined ? "—" : `${value.toLocaleString("nl-NL")} cand.`;
+}
+
+function sortGemeenten(gemeenten: Gemeente[]): Gemeente[] {
+  const counts = ELIGIBLE_COUNTS.counts as Record<
+    string,
+    { eligibleCount?: number } | undefined
+  >;
+  return [...gemeenten].sort((a, b) => {
+    const countA = counts[a.code]?.eligibleCount ?? -1;
+    const countB = counts[b.code]?.eligibleCount ?? -1;
+    if (countA !== countB) return countB - countA;
+    return a.name.localeCompare(b.name, "nl");
+  });
 }

@@ -106,6 +106,64 @@
   white-space: nowrap;
 }
 
+.actionsSection {
+  padding: 12px 14px;
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+
+.actionsHeader {
+  margin-bottom: 8px;
+}
+
+.actionsLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.actionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.actionBtn,
+.actionBtnGhost {
+  display: block;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  transition: opacity 0.1s, border-color 0.1s;
+}
+
+.actionBtn {
+  background: var(--accent-blue-dim);
+  color: #fff;
+  border: 0.5px solid var(--accent-blue-dim);
+}
+
+.actionBtnGhost {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 0.5px solid var(--border-subtle);
+}
+
+.actionBtn:hover,
+.actionBtnGhost:hover {
+  opacity: 0.88;
+}
+
+.actionsNote {
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 /* Score section */
 .scoreSection {
   padding: 12px 14px;

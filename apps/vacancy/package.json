@@ -4,6 +4,7 @@
   "description": "Vacancy and underuse radar for Dutch housing stock — leegstandsradar.nl",
   "private": true,
   "scripts": {
+    "build-eligible-counts": "node ./scripts/build-eligible-counts.mjs",
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start",

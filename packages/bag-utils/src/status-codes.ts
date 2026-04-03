@@ -8,17 +8,33 @@
  */
 
 export const BAG_VBO_STATUS = {
-  VERBOUWING: "Verbouwing",
+  GEVORMD: "Verblijfsobject gevormd",
   IN_GEBRUIK: "Verblijfsobject in gebruik",
   IN_GEBRUIK_NIET_INGEMETEN: "Verblijfsobject in gebruik (niet ingemeten)",
   BUITEN_GEBRUIK: "Verblijfsobject buiten gebruik",
+  VERBOUWING: "Verbouwing verblijfsobject",
   INGETROKKEN: "Verblijfsobject ingetrokken",
   NIET_GEREALISEERD: "Niet gerealiseerd verblijfsobject",
-  SLOOPVERGUNNING: "Sloopvergunning verleend",
-  BOUWVERGUNNING: "Bouwvergunning verleend",
 } as const;
 
 export type BagVboStatus = (typeof BAG_VBO_STATUS)[keyof typeof BAG_VBO_STATUS];
+
+export const BAG_PAND_STATUS = {
+  BOUWVERGUNNING: "Bouwvergunning verleend",
+  BOUW_GESTART: "Bouw gestart",
+  IN_GEBRUIK: "Pand in gebruik",
+  IN_GEBRUIK_NIET_INGEMETEN: "Pand in gebruik (niet ingemeten)",
+  SLOOPVERGUNNING: "Sloopvergunning verleend",
+  GESLOOPT: "Pand gesloopt",
+  BUITEN_GEBRUIK: "Pand buiten gebruik",
+  VERBOUWING: "Verbouwing pand",
+} as const;
+
+export type BagPandStatus =
+  (typeof BAG_PAND_STATUS)[keyof typeof BAG_PAND_STATUS];
+
+export const ALL_VBO_STATUSES: BagVboStatus[] = Object.values(BAG_VBO_STATUS);
+export const ALL_PAND_STATUSES: BagPandStatus[] = Object.values(BAG_PAND_STATUS);
 
 /**
  * Status values that indicate potential vacancy or underuse.
@@ -55,4 +71,5 @@ export const CONVERSION_ELIGIBLE_DOELEN: BagGebruiksdoel[] = [
   BAG_GEBRUIKSDOEL.WINKELFUNCTIE,
   BAG_GEBRUIKSDOEL.BIJEENKOMSTFUNCTIE,
   BAG_GEBRUIKSDOEL.ONDERWIJSFUNCTIE,
+  BAG_GEBRUIKSDOEL.INDUSTRIEFUNCTIE,
 ];

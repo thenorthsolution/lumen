@@ -8,11 +8,10 @@
  * No API key, no backend, no auth.
  */
 
-import { bagVerblijfsobjectenUrl, type Gemeente } from "@lumen/pdok-client";
+import { type Gemeente } from "@lumen/pdok-client";
 
 import {
   scoreViability,
-  VACANCY_INDICATOR_STATUSES,
   CONVERSION_ELIGIBLE_DOELEN,
   type VboInput,
 } from "@lumen/bag-utils";
@@ -22,7 +21,24 @@ import type {
   VboFeatureProperties,
   FilterState,
 } from "@/components/AppShell";
-import type { Feature, Geometry, GeoJsonProperties } from "geojson";
+import type {
+  Feature,
+  FeatureCollection,
+  Geometry,
+  GeoJsonProperties,
+} from "geojson";
+
+const BAG_OGC_BASE = "https://api.pdok.nl/kadaster/bag/ogc/v2";
+const OGC_PAGE_LIMIT = 10000;
+
+interface OgcFeatureCollection<
+  TProps = GeoJsonProperties,
+> extends FeatureCollection<Geometry, TProps> {
+  links?: Array<{
+    rel?: string;
+    href?: string;
+  }>;
+}
 
 /**
  * Main fetch + score pipeline.
@@ -32,115 +48,172 @@ export async function fetchAndScoreGemeente(
   filters: FilterState,
   signal?: AbortSignal,
 ): Promise<VboFeatureCollection> {
-  const url = bagVerblijfsobjectenUrl(gemeente.code, {
-    status: VACANCY_INDICATOR_STATUSES,
-    gebruiksdoel: CONVERSION_ELIGIBLE_DOELEN,
-    maxFeatures: 5000,
-  });
-
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      ...(signal ? { signal } : {}),
-    });
-  } catch (err) {
-    if ((err as Error).name === "AbortError") throw err;
-    throw new Error(
-      `Netwerk fout bij ophalen BAG data: ${(err as Error).message}`,
-    );
-  }
-
-  if (!response.ok) {
-    // Log the full URL to help debug future issues
-    console.error(
-      "BAG WFS request failed:",
-      response.status,
-      response.statusText,
-      url,
-    );
-    throw new Error(`PDOK WFS fout: ${response.status} ${response.statusText}`);
-  }
-
-  const raw = (await response.json()) as { features?: unknown[] };
+  const [raw, pands] = await Promise.all([
+    fetchOgcCollection(
+      "verblijfsobject",
+      gemeente.bbox,
+      signal,
+      OGC_PAGE_LIMIT,
+    ),
+    fetchOgcCollection("pand", gemeente.bbox, signal, OGC_PAGE_LIMIT),
+  ]);
 
   if (!raw.features || raw.features.length === 0) {
-    console.warn("BAG WFS returned no features for gemeente", gemeente.code);
+    console.warn("BAG OGC returned no features for gemeente", gemeente.code);
     return emptyCollection();
   }
 
-  // Apply client-side filters and scoring
+  const pandStatusByHref = new Map<string, string>();
+  for (const pand of pands.features ?? []) {
+    const featureId = String(pand.id ?? "");
+    const status = String((pand.properties ?? {})["status"] ?? "");
+    if (!featureId || !status) continue;
+    pandStatusByHref.set(
+      `${BAG_OGC_BASE}/collections/pand/items/${featureId}`,
+      status,
+    );
+  }
+
   const scored = (raw.features as Feature<Geometry, GeoJsonProperties>[])
-    .filter((f) => {
+    .map((f): Feature<Geometry, VboFeatureProperties> | null => {
       const props = (f.properties ?? {}) as Record<string, unknown>;
-      // Field names in PDOK response may use camelCase or lowercase
-      const bouwjaar = Number(props["bouwjaar"] ?? props["BOUWJAAR"] ?? 0);
-      const opp = Number(
-        props["oppervlakte"] ??
-          props["oppervlakteverblijfsobject"] ??
-          props["OPPERVLAKTE"] ??
-          0,
-      );
+
+      const status = String(props["status"] ?? props["STATUS"] ?? "");
       const gebruiksdoel = String(
         props["gebruiksdoel"] ?? props["gebruiksdoelverblijfsobject"] ?? "",
-      );
-
-      return (
-        bouwjaar >= filters.bouwjaarMin &&
-        opp >= filters.oppervlakteMin &&
-        (filters.gebruiksdoelen.length === 0 ||
-          filters.gebruiksdoelen.includes(gebruiksdoel))
-      );
-    })
-    .map((f): Feature<Geometry, VboFeatureProperties> => {
-      const props = (f.properties ?? {}) as Record<string, unknown>;
-
-      // Normalise field names — PDOK may return different casings
-      const identificatie = String(
-        props["identificatie"] ?? props["IDENTIFICATIE"] ?? "",
-      );
+      ).toLowerCase();
       const bouwjaar = Number(props["bouwjaar"] ?? props["BOUWJAAR"] ?? 0);
       const oppervlakte = Number(
-        props["oppervlakte"] ??
-          props["oppervlakteverblijfsobject"] ??
-          props["OPPERVLAKTE"] ??
-          0,
+        props["oppervlakte"] ?? props["oppervlakteverblijfsobject"] ?? 0,
       );
-      const gebruiksdoel = String(
-        props["gebruiksdoel"] ?? props["gebruiksdoelverblijfsobject"] ?? "",
-      );
-      const status = String(props["status"] ?? props["STATUS"] ?? "");
-      const woonplaatsnaam = String(
-        props["woonplaatsnaam"] ?? props["WOONPLAATSNAAM"] ?? "",
-      );
+      const pandStatus = resolvePandStatus(props, pandStatusByHref);
 
-      const input: VboInput = {
-        identificatie,
+      const isEligible = CONVERSION_ELIGIBLE_DOELEN.map((d) =>
+        d.toLowerCase(),
+      ).includes(gebruiksdoel);
+      const meetsYear = bouwjaar >= filters.bouwjaarMin;
+      const meetsSize = oppervlakte >= filters.oppervlakteMin;
+      const matchesSelectedGebruik =
+        filters.gebruiksdoelen.length === 0 ||
+        filters.gebruiksdoelen
+          .map((g) => g.toLowerCase())
+          .includes(gebruiksdoel);
+      const matchesVboStatus =
+        filters.vboStatuses.length === 0 || filters.vboStatuses.includes(status);
+      const matchesPandStatus =
+        filters.pandStatuses.length === 0 ||
+        !pandStatus ||
+        filters.pandStatuses.includes(pandStatus);
+
+      if (
+        !isEligible ||
+        !meetsYear ||
+        !meetsSize ||
+        !matchesSelectedGebruik ||
+        !matchesVboStatus ||
+        !matchesPandStatus
+      ) {
+        return null;
+      }
+
+      const score = scoreViability({
+        identificatie: String(props["identificatie"] ?? ""),
         bouwjaar,
         oppervlakte,
         gebruiksdoel,
-      };
-
-      const score = scoreViability(input);
+        vboStatus: status,
+        pandStatus,
+      });
 
       return {
         type: "Feature",
         geometry: f.geometry,
         properties: {
-          identificatie,
           status,
+          pandStatus,
+          bagUri: String(props["rdf_seealso"] ?? ""),
           gebruiksdoel,
           oppervlakte,
           bouwjaar,
-          woonplaatsnaam,
+          identificatie: String(props["identificatie"] ?? ""),
+          woonplaatsnaam: String(
+            props["woonplaats_naam"] ??
+              props["woonplaatsnaam"] ??
+              props["WOONPLAATSNAAM"] ??
+              "",
+          ),
           score,
         },
       };
-    });
+    })
+    .filter((f): f is Feature<Geometry, VboFeatureProperties> => f !== null);
 
   return {
     type: "FeatureCollection",
     features: scored,
   };
+}
+
+export async function fetchPandGeometries(
+  bbox: Gemeente["bbox"],
+  signal?: AbortSignal,
+): Promise<FeatureCollection<Geometry, GeoJsonProperties>> {
+  return fetchOgcCollection("pand", bbox, signal, OGC_PAGE_LIMIT);
+}
+
+async function fetchOgcCollection(
+  collection: "pand" | "verblijfsobject",
+  bbox: Gemeente["bbox"],
+  signal?: AbortSignal,
+  limit = OGC_PAGE_LIMIT,
+): Promise<OgcFeatureCollection> {
+  const url = new URL(`${BAG_OGC_BASE}/collections/${collection}/items`);
+  url.searchParams.set("f", "json");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("bbox", bbox.join(","));
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), signal ? { signal } : {});
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    throw new Error(
+      `Netwerk fout bij ophalen BAG ${collection}: ${(err as Error).message}`,
+    );
+  }
+
+  if (!response.ok) {
+    console.error(
+      "BAG OGC request failed:",
+      collection,
+      response.status,
+      response.statusText,
+      url.toString(),
+    );
+    throw new Error(
+      `PDOK BAG OGC fout (${collection}): ${response.status} ${response.statusText}`,
+    );
+  }
+
+  return (await response.json()) as OgcFeatureCollection;
+}
+
+function resolvePandStatus(
+  props: Record<string, unknown>,
+  pandStatusByHref: Map<string, string>,
+): string {
+  const rawHref = props["pand.href"];
+  if (Array.isArray(rawHref)) {
+    for (const value of rawHref) {
+      const href = String(value ?? "");
+      const status = pandStatusByHref.get(href);
+      if (status) return status;
+    }
+  }
+  if (typeof rawHref === "string") {
+    return pandStatusByHref.get(rawHref) ?? "";
+  }
+  return "";
 }
 
 function emptyCollection(): VboFeatureCollection {

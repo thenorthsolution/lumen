@@ -34,6 +34,8 @@ export interface WfsQueryParams {
   typeName: string;
   /** CQL filter expression */
   cqlFilter?: string;
+  /** BBOX in [west, south, east, north] */
+  bbox?: [number, number, number, number];
   /** Max features to return */
   count?: number;
   /** Output SRS — defaults to WGS84 */
@@ -62,6 +64,9 @@ export function buildWfsUrl(params: WfsQueryParams): string {
   if (params.cqlFilter) {
     url.searchParams.set("CQL_FILTER", params.cqlFilter);
   }
+  if (params.bbox) {
+    url.searchParams.set("bbox", params.bbox.join(","));
+  }
   if (params.propertyName?.length) {
     url.searchParams.set("propertyName", params.propertyName.join(","));
   }
@@ -79,14 +84,14 @@ export function buildWfsUrl(params: WfsQueryParams): string {
  *   from requesting non-existent field names
  */
 export function bagVerblijfsobjectenUrl(
-  gemeenteCode: string,
   options?: {
+    bbox?: [number, number, number, number];
     status?: string[];
     gebruiksdoel?: string[];
     maxFeatures?: number;
   },
 ): string {
-  const filters: string[] = [`gemeentecode = '${gemeenteCode}'`];
+  const filters: string[] = [];
 
   if (options?.status?.length) {
     if (options.status.length === 1) {
@@ -118,7 +123,12 @@ export function bagVerblijfsobjectenUrl(
   url.searchParams.set("outputFormat", "application/json");
   url.searchParams.set("srsName", "EPSG:4326");
   url.searchParams.set("count", String(options?.maxFeatures ?? 5000));
-  url.searchParams.set("CQL_FILTER", filters.join(" AND "));
+  if (filters.length) {
+    url.searchParams.set("CQL_FILTER", filters.join(" AND "));
+  }
+  if (options?.bbox) {
+    url.searchParams.set("bbox", options.bbox.join(","));
+  }
   // Do NOT set propertyName — PDOK returns 400 if any requested field
   // name doesn't exist. Let the server return all fields instead.
 
@@ -128,12 +138,15 @@ export function bagVerblijfsobjectenUrl(
 /**
  * Fetch BAG panden (buildings) within a gemeente.
  */
-export function bagPandenUrl(gemeenteCode: string, maxFeatures = 2000): string {
+export function bagPandenUrl(
+  maxFeatures = 2000,
+  bbox?: [number, number, number, number],
+): string {
   return buildWfsUrl({
     service: PDOK_ENDPOINTS.BAG_WFS,
     typeName: "bag:pand",
-    cqlFilter: `gemeentecode = '${gemeenteCode}'`,
     count: maxFeatures,
+    ...(bbox ? { bbox } : {}),
   });
 }
 
