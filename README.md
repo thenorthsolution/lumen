@@ -133,7 +133,7 @@ The viability scoring model (`packages/bag-utils`) is intentionally exported as 
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+GNU — see [LICENSE](LICENSE)
 
 Data used: BAG (CC0), CBS (CC0), TenderNed (open), PDOK (open).
 
