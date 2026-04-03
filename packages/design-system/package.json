@@ -1,0 +1,6 @@
+{
+  "name": "@lumen/design-system",
+  "exports": {
+    "./styles.css": "./src/styles.css"
+  }
+}

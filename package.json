@@ -10,6 +10,9 @@
     "clean": "turbo clean"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.0.0",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   },
