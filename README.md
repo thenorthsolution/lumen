@@ -1,6 +1,6 @@
 # Lumen
 
-**Open tools for the Dutch housing crisis — built by [North Solution](https://thenorthsolution.com)**
+**Open tools for the Dutch housing crisis. Built by [North Solution](https://thenorthsolution.com)**
 
 Three free, open-source spatial tools that address the visibility and coordination failures at the core of the Netherlands housing shortage. No account required. No paywall. MIT licensed.
 
@@ -8,11 +8,11 @@ Three free, open-source spatial tools that address the visibility and coordinati
 
 ## Tools
 
-| Tool                    | URL                    | What it does                                                                       |
-| ----------------------- | ---------------------- | ---------------------------------------------------------------------------------- |
-| **leegstandsradar**     | leegstandsradar.nl     | Maps vacant and underused buildings with a viability filter for housing conversion |
-| **ruimtevinden**        | ruimtevinden.nl        | Identifies underused and buildable land for new housing                            |
-| **bouwcapaciteitcheck** | bouwcapaciteitcheck.nl | Shows regional construction pipeline activity and capacity bottlenecks             |
+| Tool         | What it does                                                                       |
+| ------------ | ---------------------------------------------------------------------------------- |
+| **vacancy**. | Maps vacant and underused buildings with a viability filter for housing conversion |
+| **space**.   | Identifies underused and buildable land for new housing                            |
+| **pipeline** | Shows regional construction pipeline activity and capacity bottlenecks             |
 
 All tools default to Deventer (our proof-of-concept municipality) and are switchable to any Dutch gemeente.
 
@@ -20,8 +20,7 @@ All tools default to Deventer (our proof-of-concept municipality) and are switch
 
 ## Background
 
-These tools accompany a research paper by North Solution:  
-**"De Woningcrisis is Geen Schaarsteprobleem — Het is een Zichtbaarheidsprobleem"**
+These tools accompany a research paper by North Solution that is in development.
 
 The thesis: the Dutch housing crisis is primarily a visibility and coordination failure, not a pure scarcity problem. Space exists but is invisible. Vacancy is undercounted. Construction capacity is unconfident. These tools make those failures legible.
 
