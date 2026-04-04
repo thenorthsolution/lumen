@@ -7,10 +7,23 @@ import styles from "./DetailPanel.module.css";
 
 interface DetailPanelProps {
   feature: VboFeature;
+  onViewIn3D: () => void;
+  onOpenAdvanced3D: () => void;
+  onRotateLeft: () => void;
+  onRotateRight: () => void;
+  onReset3D: () => void;
   onClose: () => void;
 }
 
-export function DetailPanel({ feature, onClose }: DetailPanelProps) {
+export function DetailPanel({
+  feature,
+  onViewIn3D,
+  onOpenAdvanced3D,
+  onRotateLeft,
+  onRotateRight,
+  onReset3D,
+  onClose,
+}: DetailPanelProps) {
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagNote, setFlagNote] = useState("");
   const [flagSent, setFlagSent] = useState(false);
@@ -22,7 +35,6 @@ export function DetailPanel({ feature, onClose }: DetailPanelProps) {
   const bagViewerUrl = props?.identificatie
     ? `https://bagviewer.kadaster.nl/lvbag/bag-viewer/?objectId=${props.identificatie}`
     : null;
-  const pdok3dUrl = "https://www.pdok.nl/3d-viewer";
 
   function handleFlag(e: React.FormEvent) {
     e.preventDefault();
@@ -113,14 +125,45 @@ export function DetailPanel({ feature, onClose }: DetailPanelProps) {
             </a>
           )}
           {showThreeDAction && (
-            <a
-              href={pdok3dUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.actionBtn}
-            >
-              Open PDOK 3D Viewer
-            </a>
+            <>
+              <button
+                type="button"
+                onClick={onViewIn3D}
+                className={styles.actionBtn}
+              >
+                Kaart 3D
+              </button>
+              <button
+                type="button"
+                onClick={onOpenAdvanced3D}
+                className={styles.actionBtn}
+              >
+                Open 3D model
+              </button>
+              <div className={styles.rotateRow}>
+                <button
+                  type="button"
+                  onClick={onRotateLeft}
+                  className={styles.actionBtnGhost}
+                >
+                  Draai links
+                </button>
+                <button
+                  type="button"
+                  onClick={onReset3D}
+                  className={styles.actionBtnGhost}
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={onRotateRight}
+                  className={styles.actionBtnGhost}
+                >
+                  Draai rechts
+                </button>
+              </div>
+            </>
           )}
           {props?.bagUri && (
             <a
@@ -135,9 +178,10 @@ export function DetailPanel({ feature, onClose }: DetailPanelProps) {
         </div>
         {(showThreeDAction || props?.bagUri) && (
           <p className={styles.actionsNote}>
-            BAG Viewer opent direct het object. De PDOK 3D Viewer geeft 3D
-            context voor de omgeving; exacte objectkoppeling is daar nog niet
-            doorgelinkt.
+            BAG Viewer opent direct het object. `Kaart 3D` zet de kaart in een
+            schuine 3D-weergave. `Open 3D model` opent een zwaardere viewer met
+            echte 3D gebouwgeometrie. Draai de kaart daarna met `Q` / `E`,
+            pijltjes links/rechts, `Shift` + scroll, of de knoppen hierboven.
           </p>
         )}
       </div>

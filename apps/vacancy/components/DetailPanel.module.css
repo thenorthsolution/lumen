@@ -129,15 +129,24 @@
   gap: 8px;
 }
 
+.rotateRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .actionBtn,
 .actionBtnGhost {
   display: block;
+  width: 100%;
   padding: 8px 10px;
   border-radius: var(--radius-md);
   text-decoration: none;
   font-family: var(--font-mono);
   font-size: 11px;
   transition: opacity 0.1s, border-color 0.1s;
+  text-align: left;
+  cursor: pointer;
 }
 
 .actionBtn {
