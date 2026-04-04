@@ -1,9 +1,1724 @@
 {
-  "updatedAt": "",
+  "updatedAt": "2026-04-03T19:01:12.268Z",
   "filters": {
-    "bouwjaarMin": 1975,
-    "oppervlakteMin": 300,
-    "gebruiksdoelen": []
+    "gebruiksdoelen": [
+      "kantoorfunctie",
+      "winkelfunctie",
+      "bijeenkomstfunctie",
+      "onderwijsfunctie",
+      "industriefunctie"
+    ]
   },
-  "counts": {}
+  "counts": {
+    "1507": {
+      "eligibleCount": 3622,
+      "totalFetched": 45651,
+      "pages": 46
+    },
+    "1509": {
+      "eligibleCount": 2897,
+      "totalFetched": 43831,
+      "pages": 44
+    },
+    "1525": {
+      "eligibleCount": 2227,
+      "totalFetched": 39966,
+      "pages": 40
+    },
+    "1581": {
+      "eligibleCount": 2928,
+      "totalFetched": 66039,
+      "pages": 67
+    },
+    "1586": {
+      "eligibleCount": 1314,
+      "totalFetched": 19354,
+      "pages": 20
+    },
+    "1598": {
+      "eligibleCount": 1632,
+      "totalFetched": 22333,
+      "pages": 23
+    },
+    "1621": {
+      "eligibleCount": 7071,
+      "totalFetched": 107248,
+      "pages": 108
+    },
+    "1640": {
+      "eligibleCount": 4052,
+      "totalFetched": 62061,
+      "pages": 63
+    },
+    "1641": {
+      "eligibleCount": 1516,
+      "totalFetched": 27680,
+      "pages": 28
+    },
+    "1652": {
+      "eligibleCount": 1244,
+      "totalFetched": 29610,
+      "pages": 30
+    },
+    "1655": {
+      "eligibleCount": 2490,
+      "totalFetched": 24287,
+      "pages": 25
+    },
+    "1658": {
+      "eligibleCount": 1662,
+      "totalFetched": 36065,
+      "pages": 37
+    },
+    "1659": {
+      "eligibleCount": 997,
+      "totalFetched": 17835,
+      "pages": 18
+    },
+    "1667": {
+      "eligibleCount": 647,
+      "totalFetched": 7929,
+      "pages": 8
+    },
+    "1669": {
+      "eligibleCount": 2075,
+      "totalFetched": 37800,
+      "pages": 38
+    },
+    "1674": {
+      "eligibleCount": 3764,
+      "totalFetched": 54303,
+      "pages": 55
+    },
+    "1676": {
+      "eligibleCount": 3553,
+      "totalFetched": 59848,
+      "pages": 60
+    },
+    "1680": {
+      "eligibleCount": 3644,
+      "totalFetched": 59628,
+      "pages": 60
+    },
+    "1681": {
+      "eligibleCount": 2064,
+      "totalFetched": 36919,
+      "pages": 37
+    },
+    "1690": {
+      "eligibleCount": 3622,
+      "totalFetched": 49342,
+      "pages": 50
+    },
+    "1695": {
+      "eligibleCount": 594,
+      "totalFetched": 12287,
+      "pages": 13
+    },
+    "1696": {
+      "eligibleCount": 1594,
+      "totalFetched": 25906,
+      "pages": 26
+    },
+    "1699": {
+      "eligibleCount": 3000,
+      "totalFetched": 44144,
+      "pages": 45
+    },
+    "1700": {
+      "eligibleCount": 1678,
+      "totalFetched": 24096,
+      "pages": 25
+    },
+    "1701": {
+      "eligibleCount": 1597,
+      "totalFetched": 30620,
+      "pages": 31
+    },
+    "1705": {
+      "eligibleCount": 3366,
+      "totalFetched": 75722,
+      "pages": 76
+    },
+    "1706": {
+      "eligibleCount": 1043,
+      "totalFetched": 14767,
+      "pages": 15
+    },
+    "1708": {
+      "eligibleCount": 3955,
+      "totalFetched": 54648,
+      "pages": 55
+    },
+    "1709": {
+      "eligibleCount": 2227,
+      "totalFetched": 29010,
+      "pages": 30
+    },
+    "1711": {
+      "eligibleCount": 1771,
+      "totalFetched": 28274,
+      "pages": 29
+    },
+    "1714": {
+      "eligibleCount": 2137,
+      "totalFetched": 27280,
+      "pages": 28
+    },
+    "1719": {
+      "eligibleCount": 1805,
+      "totalFetched": 26949,
+      "pages": 27
+    },
+    "1721": {
+      "eligibleCount": 1117,
+      "totalFetched": 27627,
+      "pages": 28
+    },
+    "1723": {
+      "eligibleCount": 924,
+      "totalFetched": 14352,
+      "pages": 15
+    },
+    "1724": {
+      "eligibleCount": 1605,
+      "totalFetched": 27922,
+      "pages": 28
+    },
+    "1728": {
+      "eligibleCount": 1358,
+      "totalFetched": 17821,
+      "pages": 18
+    },
+    "1729": {
+      "eligibleCount": 734,
+      "totalFetched": 15136,
+      "pages": 16
+    },
+    "1730": {
+      "eligibleCount": 3782,
+      "totalFetched": 70465,
+      "pages": 71
+    },
+    "1731": {
+      "eligibleCount": 3262,
+      "totalFetched": 61330,
+      "pages": 62
+    },
+    "1734": {
+      "eligibleCount": 3826,
+      "totalFetched": 78950,
+      "pages": 79
+    },
+    "1735": {
+      "eligibleCount": 3210,
+      "totalFetched": 47898,
+      "pages": 48
+    },
+    "1740": {
+      "eligibleCount": 1586,
+      "totalFetched": 19695,
+      "pages": 20
+    },
+    "1742": {
+      "eligibleCount": 1456,
+      "totalFetched": 21621,
+      "pages": 22
+    },
+    "1771": {
+      "eligibleCount": 1138,
+      "totalFetched": 29201,
+      "pages": 30
+    },
+    "1773": {
+      "eligibleCount": 995,
+      "totalFetched": 17887,
+      "pages": 18
+    },
+    "1774": {
+      "eligibleCount": 4027,
+      "totalFetched": 64957,
+      "pages": 65
+    },
+    "1783": {
+      "eligibleCount": 11224,
+      "totalFetched": 158426,
+      "pages": 159
+    },
+    "1842": {
+      "eligibleCount": 8493,
+      "totalFetched": 138383,
+      "pages": 139
+    },
+    "1859": {
+      "eligibleCount": 3471,
+      "totalFetched": 52098,
+      "pages": 53
+    },
+    "1876": {
+      "eligibleCount": 3414,
+      "totalFetched": 65676,
+      "pages": 66
+    },
+    "1883": {
+      "eligibleCount": 4761,
+      "totalFetched": 80674,
+      "pages": 81
+    },
+    "1884": {
+      "eligibleCount": 2240,
+      "totalFetched": 27972,
+      "pages": 28
+    },
+    "1891": {
+      "eligibleCount": 1597,
+      "totalFetched": 19871,
+      "pages": 20
+    },
+    "1892": {
+      "eligibleCount": 7855,
+      "totalFetched": 107505,
+      "pages": 108
+    },
+    "1894": {
+      "eligibleCount": 2479,
+      "totalFetched": 39057,
+      "pages": 40
+    },
+    "1895": {
+      "eligibleCount": 2315,
+      "totalFetched": 34584,
+      "pages": 35
+    },
+    "1896": {
+      "eligibleCount": 1205,
+      "totalFetched": 12846,
+      "pages": 13
+    },
+    "1900": {
+      "eligibleCount": 6524,
+      "totalFetched": 80347,
+      "pages": 81
+    },
+    "1901": {
+      "eligibleCount": 4558,
+      "totalFetched": 64968,
+      "pages": 65
+    },
+    "1903": {
+      "eligibleCount": 3741,
+      "totalFetched": 60981,
+      "pages": 61
+    },
+    "1904": {
+      "eligibleCount": 4563,
+      "totalFetched": 72523,
+      "pages": 73
+    },
+    "1911": {
+      "eligibleCount": 8157,
+      "totalFetched": 86705,
+      "pages": 87
+    },
+    "1916": {
+      "eligibleCount": 6429,
+      "totalFetched": 111356,
+      "pages": 112
+    },
+    "1924": {
+      "eligibleCount": 8723,
+      "totalFetched": 160523,
+      "pages": 161
+    },
+    "1926": {
+      "eligibleCount": 3049,
+      "totalFetched": 56012,
+      "pages": 57
+    },
+    "1930": {
+      "eligibleCount": 4849,
+      "totalFetched": 95268,
+      "pages": 96
+    },
+    "1931": {
+      "eligibleCount": 9303,
+      "totalFetched": 144489,
+      "pages": 145
+    },
+    "1940": {
+      "eligibleCount": 8418,
+      "totalFetched": 98556,
+      "pages": 99
+    },
+    "1942": {
+      "eligibleCount": 7854,
+      "totalFetched": 117462,
+      "pages": 118
+    },
+    "1945": {
+      "eligibleCount": 1361,
+      "totalFetched": 30448,
+      "pages": 31
+    },
+    "1948": {
+      "eligibleCount": 4372,
+      "totalFetched": 70983,
+      "pages": 71
+    },
+    "1949": {
+      "eligibleCount": 2939,
+      "totalFetched": 34492,
+      "pages": 35
+    },
+    "1950": {
+      "eligibleCount": 1816,
+      "totalFetched": 32591,
+      "pages": 33
+    },
+    "1952": {
+      "eligibleCount": 4336,
+      "totalFetched": 70280,
+      "pages": 71
+    },
+    "1954": {
+      "eligibleCount": 7145,
+      "totalFetched": 127212,
+      "pages": 128
+    },
+    "1955": {
+      "eligibleCount": 4283,
+      "totalFetched": 54493,
+      "pages": 55
+    },
+    "1959": {
+      "eligibleCount": 6389,
+      "totalFetched": 101306,
+      "pages": 102
+    },
+    "1960": {
+      "eligibleCount": 4207,
+      "totalFetched": 70056,
+      "pages": 71
+    },
+    "1961": {
+      "eligibleCount": 3069,
+      "totalFetched": 46867,
+      "pages": 47
+    },
+    "1963": {
+      "eligibleCount": 6417,
+      "totalFetched": 85691,
+      "pages": 86
+    },
+    "1966": {
+      "eligibleCount": 3157,
+      "totalFetched": 70573,
+      "pages": 71
+    },
+    "1969": {
+      "eligibleCount": 4105,
+      "totalFetched": 59116,
+      "pages": 60
+    },
+    "1970": {
+      "eligibleCount": 3830,
+      "totalFetched": 51812,
+      "pages": 52
+    },
+    "1978": {
+      "eligibleCount": 6539,
+      "totalFetched": 102465,
+      "pages": 103
+    },
+    "1979": {
+      "eligibleCount": 2846,
+      "totalFetched": 60346,
+      "pages": 61
+    },
+    "1980": {
+      "eligibleCount": 6374,
+      "totalFetched": 89594,
+      "pages": 90
+    },
+    "1982": {
+      "eligibleCount": 5337,
+      "totalFetched": 84847,
+      "pages": 85
+    },
+    "1991": {
+      "eligibleCount": 3256,
+      "totalFetched": 47163,
+      "pages": 48
+    },
+    "1992": {
+      "eligibleCount": 3034,
+      "totalFetched": 54820,
+      "pages": 55
+    },
+    "0047": {
+      "eligibleCount": 969,
+      "totalFetched": 18489,
+      "pages": 19
+    },
+    "0037": {
+      "eligibleCount": 1533,
+      "totalFetched": 25251,
+      "pages": 26
+    },
+    "0060": {
+      "eligibleCount": 1480,
+      "totalFetched": 14930,
+      "pages": 15
+    },
+    "0059": {
+      "eligibleCount": 1641,
+      "totalFetched": 23637,
+      "pages": 24
+    },
+    "0072": {
+      "eligibleCount": 1674,
+      "totalFetched": 18723,
+      "pages": 19
+    },
+    "0088": {
+      "eligibleCount": 101,
+      "totalFetched": 1742,
+      "pages": 2
+    },
+    "0050": {
+      "eligibleCount": 3413,
+      "totalFetched": 63996,
+      "pages": 64
+    },
+    "0085": {
+      "eligibleCount": 1301,
+      "totalFetched": 22302,
+      "pages": 23
+    },
+    "0074": {
+      "eligibleCount": 4611,
+      "totalFetched": 55707,
+      "pages": 56
+    },
+    "0096": {
+      "eligibleCount": 425,
+      "totalFetched": 4183,
+      "pages": 5
+    },
+    "0034": {
+      "eligibleCount": 7509,
+      "totalFetched": 130916,
+      "pages": 131
+    },
+    "0093": {
+      "eligibleCount": 675,
+      "totalFetched": 9407,
+      "pages": 10
+    },
+    "0090": {
+      "eligibleCount": 2698,
+      "totalFetched": 37401,
+      "pages": 38
+    },
+    "0086": {
+      "eligibleCount": 4677,
+      "totalFetched": 61042,
+      "pages": 62
+    },
+    "0119": {
+      "eligibleCount": 2051,
+      "totalFetched": 25311,
+      "pages": 26
+    },
+    "0098": {
+      "eligibleCount": 2169,
+      "totalFetched": 29811,
+      "pages": 30
+    },
+    "0109": {
+      "eligibleCount": 1819,
+      "totalFetched": 34310,
+      "pages": 35
+    },
+    "0106": {
+      "eligibleCount": 2901,
+      "totalFetched": 43458,
+      "pages": 44
+    },
+    "0118": {
+      "eligibleCount": 3068,
+      "totalFetched": 38256,
+      "pages": 39
+    },
+    "0014": {
+      "eligibleCount": 11854,
+      "totalFetched": 198279,
+      "pages": 199
+    },
+    "0080": {
+      "eligibleCount": 8870,
+      "totalFetched": 110178,
+      "pages": 111
+    },
+    "0147": {
+      "eligibleCount": 1374,
+      "totalFetched": 14813,
+      "pages": 15
+    },
+    "0114": {
+      "eligibleCount": 4590,
+      "totalFetched": 67814,
+      "pages": 68
+    },
+    "0148": {
+      "eligibleCount": 1376,
+      "totalFetched": 22812,
+      "pages": 23
+    },
+    "0141": {
+      "eligibleCount": 2924,
+      "totalFetched": 47322,
+      "pages": 48
+    },
+    "0158": {
+      "eligibleCount": 1814,
+      "totalFetched": 34208,
+      "pages": 35
+    },
+    "0163": {
+      "eligibleCount": 2794,
+      "totalFetched": 35408,
+      "pages": 36
+    },
+    "0150": {
+      "eligibleCount": 4014,
+      "totalFetched": 66478,
+      "pages": 67
+    },
+    "0166": {
+      "eligibleCount": 2445,
+      "totalFetched": 33270,
+      "pages": 34
+    },
+    "0168": {
+      "eligibleCount": 1441,
+      "totalFetched": 19377,
+      "pages": 20
+    },
+    "0160": {
+      "eligibleCount": 4183,
+      "totalFetched": 62459,
+      "pages": 63
+    },
+    "0173": {
+      "eligibleCount": 1475,
+      "totalFetched": 18579,
+      "pages": 19
+    },
+    "0175": {
+      "eligibleCount": 1976,
+      "totalFetched": 30099,
+      "pages": 31
+    },
+    "0184": {
+      "eligibleCount": 1278,
+      "totalFetched": 10519,
+      "pages": 11
+    },
+    "0164": {
+      "eligibleCount": 6328,
+      "totalFetched": 78430,
+      "pages": 79
+    },
+    "0177": {
+      "eligibleCount": 1671,
+      "totalFetched": 27400,
+      "pages": 28
+    },
+    "0180": {
+      "eligibleCount": 1435,
+      "totalFetched": 22020,
+      "pages": 23
+    },
+    "0171": {
+      "eligibleCount": 4183,
+      "totalFetched": 47952,
+      "pages": 48
+    },
+    "0183": {
+      "eligibleCount": 1350,
+      "totalFetched": 31433,
+      "pages": 32
+    },
+    "0197": {
+      "eligibleCount": 1186,
+      "totalFetched": 16734,
+      "pages": 17
+    },
+    "0153": {
+      "eligibleCount": 10738,
+      "totalFetched": 146357,
+      "pages": 147
+    },
+    "0189": {
+      "eligibleCount": 3516,
+      "totalFetched": 44535,
+      "pages": 45
+    },
+    "0209": {
+      "eligibleCount": 1742,
+      "totalFetched": 22140,
+      "pages": 23
+    },
+    "0221": {
+      "eligibleCount": 247,
+      "totalFetched": 7480,
+      "pages": 8
+    },
+    "0216": {
+      "eligibleCount": 946,
+      "totalFetched": 17390,
+      "pages": 18
+    },
+    "0213": {
+      "eligibleCount": 2464,
+      "totalFetched": 38573,
+      "pages": 39
+    },
+    "0203": {
+      "eligibleCount": 4439,
+      "totalFetched": 61727,
+      "pages": 62
+    },
+    "0193": {
+      "eligibleCount": 6923,
+      "totalFetched": 91086,
+      "pages": 92
+    },
+    "0225": {
+      "eligibleCount": 1201,
+      "totalFetched": 13745,
+      "pages": 14
+    },
+    "0222": {
+      "eligibleCount": 3107,
+      "totalFetched": 38746,
+      "pages": 39
+    },
+    "0200": {
+      "eligibleCount": 6412,
+      "totalFetched": 112690,
+      "pages": 113
+    },
+    "0226": {
+      "eligibleCount": 1408,
+      "totalFetched": 26210,
+      "pages": 27
+    },
+    "0214": {
+      "eligibleCount": 5636,
+      "totalFetched": 76358,
+      "pages": 77
+    },
+    "0230": {
+      "eligibleCount": 2288,
+      "totalFetched": 30339,
+      "pages": 31
+    },
+    "0244": {
+      "eligibleCount": 1509,
+      "totalFetched": 21832,
+      "pages": 22
+    },
+    "0232": {
+      "eligibleCount": 1399,
+      "totalFetched": 27175,
+      "pages": 28
+    },
+    "0202": {
+      "eligibleCount": 6986,
+      "totalFetched": 134841,
+      "pages": 135
+    },
+    "0246": {
+      "eligibleCount": 654,
+      "totalFetched": 13447,
+      "pages": 14
+    },
+    "0243": {
+      "eligibleCount": 1805,
+      "totalFetched": 35436,
+      "pages": 36
+    },
+    "0233": {
+      "eligibleCount": 1500,
+      "totalFetched": 38505,
+      "pages": 39
+    },
+    "0269": {
+      "eligibleCount": 1434,
+      "totalFetched": 23419,
+      "pages": 24
+    },
+    "0252": {
+      "eligibleCount": 1196,
+      "totalFetched": 32963,
+      "pages": 33
+    },
+    "0273": {
+      "eligibleCount": 1728,
+      "totalFetched": 29616,
+      "pages": 30
+    },
+    "0263": {
+      "eligibleCount": 2291,
+      "totalFetched": 35576,
+      "pages": 36
+    },
+    "0277": {
+      "eligibleCount": 98,
+      "totalFetched": 4759,
+      "pages": 5
+    },
+    "0279": {
+      "eligibleCount": 509,
+      "totalFetched": 7027,
+      "pages": 8
+    },
+    "0274": {
+      "eligibleCount": 903,
+      "totalFetched": 25881,
+      "pages": 26
+    },
+    "0262": {
+      "eligibleCount": 4592,
+      "totalFetched": 59753,
+      "pages": 60
+    },
+    "0281": {
+      "eligibleCount": 2289,
+      "totalFetched": 28439,
+      "pages": 29
+    },
+    "0275": {
+      "eligibleCount": 1817,
+      "totalFetched": 40221,
+      "pages": 41
+    },
+    "0267": {
+      "eligibleCount": 4970,
+      "totalFetched": 72518,
+      "pages": 73
+    },
+    "0293": {
+      "eligibleCount": 908,
+      "totalFetched": 12111,
+      "pages": 13
+    },
+    "0228": {
+      "eligibleCount": 8799,
+      "totalFetched": 136911,
+      "pages": 137
+    },
+    "0289": {
+      "eligibleCount": 1347,
+      "totalFetched": 30457,
+      "pages": 31
+    },
+    "0294": {
+      "eligibleCount": 991,
+      "totalFetched": 17868,
+      "pages": 18
+    },
+    "0268": {
+      "eligibleCount": 7766,
+      "totalFetched": 129492,
+      "pages": 130
+    },
+    "0297": {
+      "eligibleCount": 2642,
+      "totalFetched": 35448,
+      "pages": 36
+    },
+    "0285": {
+      "eligibleCount": 3837,
+      "totalFetched": 58620,
+      "pages": 59
+    },
+    "0302": {
+      "eligibleCount": 1308,
+      "totalFetched": 20972,
+      "pages": 21
+    },
+    "0301": {
+      "eligibleCount": 2719,
+      "totalFetched": 39028,
+      "pages": 40
+    },
+    "0296": {
+      "eligibleCount": 3241,
+      "totalFetched": 49280,
+      "pages": 50
+    },
+    "0299": {
+      "eligibleCount": 3112,
+      "totalFetched": 62328,
+      "pages": 63
+    },
+    "0313": {
+      "eligibleCount": 1111,
+      "totalFetched": 12733,
+      "pages": 13
+    },
+    "0308": {
+      "eligibleCount": 2306,
+      "totalFetched": 34259,
+      "pages": 35
+    },
+    "0317": {
+      "eligibleCount": 1353,
+      "totalFetched": 19800,
+      "pages": 20
+    },
+    "0303": {
+      "eligibleCount": 6084,
+      "totalFetched": 60270,
+      "pages": 61
+    },
+    "0312": {
+      "eligibleCount": 1867,
+      "totalFetched": 40973,
+      "pages": 41
+    },
+    "0339": {
+      "eligibleCount": 898,
+      "totalFetched": 5044,
+      "pages": 6
+    },
+    "0321": {
+      "eligibleCount": 1617,
+      "totalFetched": 34227,
+      "pages": 35
+    },
+    "0335": {
+      "eligibleCount": 1140,
+      "totalFetched": 13277,
+      "pages": 14
+    },
+    "0331": {
+      "eligibleCount": 2402,
+      "totalFetched": 34956,
+      "pages": 35
+    },
+    "0340": {
+      "eligibleCount": 1558,
+      "totalFetched": 22007,
+      "pages": 23
+    },
+    "0327": {
+      "eligibleCount": 3400,
+      "totalFetched": 54416,
+      "pages": 55
+    },
+    "0342": {
+      "eligibleCount": 2953,
+      "totalFetched": 33949,
+      "pages": 34
+    },
+    "0345": {
+      "eligibleCount": 3415,
+      "totalFetched": 38932,
+      "pages": 39
+    },
+    "0352": {
+      "eligibleCount": 805,
+      "totalFetched": 15512,
+      "pages": 16
+    },
+    "0307": {
+      "eligibleCount": 8315,
+      "totalFetched": 120848,
+      "pages": 121
+    },
+    "0351": {
+      "eligibleCount": 1026,
+      "totalFetched": 21401,
+      "pages": 22
+    },
+    "0353": {
+      "eligibleCount": 1383,
+      "totalFetched": 29065,
+      "pages": 30
+    },
+    "0310": {
+      "eligibleCount": 4253,
+      "totalFetched": 120645,
+      "pages": 121
+    },
+    "0356": {
+      "eligibleCount": 3173,
+      "totalFetched": 42324,
+      "pages": 43
+    },
+    "0355": {
+      "eligibleCount": 4068,
+      "totalFetched": 64757,
+      "pages": 65
+    },
+    "0358": {
+      "eligibleCount": 6634,
+      "totalFetched": 52983,
+      "pages": 53
+    },
+    "0362": {
+      "eligibleCount": 4295,
+      "totalFetched": 84102,
+      "pages": 85
+    },
+    "0375": {
+      "eligibleCount": 5261,
+      "totalFetched": 51163,
+      "pages": 52
+    },
+    "0376": {
+      "eligibleCount": 1708,
+      "totalFetched": 33346,
+      "pages": 34
+    },
+    "0373": {
+      "eligibleCount": 4829,
+      "totalFetched": 77899,
+      "pages": 78
+    },
+    "0383": {
+      "eligibleCount": 1821,
+      "totalFetched": 27914,
+      "pages": 28
+    },
+    "0361": {
+      "eligibleCount": 9429,
+      "totalFetched": 131054,
+      "pages": 132
+    },
+    "0388": {
+      "eligibleCount": 1721,
+      "totalFetched": 23982,
+      "pages": 24
+    },
+    "0377": {
+      "eligibleCount": 3993,
+      "totalFetched": 64321,
+      "pages": 65
+    },
+    "0384": {
+      "eligibleCount": 3412,
+      "totalFetched": 64472,
+      "pages": 65
+    },
+    "0397": {
+      "eligibleCount": 1545,
+      "totalFetched": 19178,
+      "pages": 20
+    },
+    "0385": {
+      "eligibleCount": 4456,
+      "totalFetched": 57118,
+      "pages": 58
+    },
+    "0396": {
+      "eligibleCount": 1846,
+      "totalFetched": 46051,
+      "pages": 47
+    },
+    "0399": {
+      "eligibleCount": 1259,
+      "totalFetched": 21923,
+      "pages": 22
+    },
+    "0400": {
+      "eligibleCount": 3135,
+      "totalFetched": 41020,
+      "pages": 42
+    },
+    "0344": {
+      "eligibleCount": 12148,
+      "totalFetched": 291475,
+      "pages": 292
+    },
+    "0415": {
+      "eligibleCount": 433,
+      "totalFetched": 11053,
+      "pages": 12
+    },
+    "0406": {
+      "eligibleCount": 1446,
+      "totalFetched": 31593,
+      "pages": 32
+    },
+    "0405": {
+      "eligibleCount": 3262,
+      "totalFetched": 46097,
+      "pages": 47
+    },
+    "0417": {
+      "eligibleCount": 912,
+      "totalFetched": 21918,
+      "pages": 22
+    },
+    "0392": {
+      "eligibleCount": 8653,
+      "totalFetched": 130040,
+      "pages": 131
+    },
+    "0431": {
+      "eligibleCount": 643,
+      "totalFetched": 13072,
+      "pages": 14
+    },
+    "0432": {
+      "eligibleCount": 689,
+      "totalFetched": 11464,
+      "pages": 12
+    },
+    "0402": {
+      "eligibleCount": 5501,
+      "totalFetched": 88127,
+      "pages": 89
+    },
+    "0450": {
+      "eligibleCount": 1336,
+      "totalFetched": 20284,
+      "pages": 21
+    },
+    "0420": {
+      "eligibleCount": 5588,
+      "totalFetched": 66610,
+      "pages": 67
+    },
+    "0448": {
+      "eligibleCount": 3369,
+      "totalFetched": 35036,
+      "pages": 36
+    },
+    "0439": {
+      "eligibleCount": 3981,
+      "totalFetched": 63001,
+      "pages": 64
+    },
+    "0437": {
+      "eligibleCount": 4894,
+      "totalFetched": 68648,
+      "pages": 69
+    },
+    "0441": {
+      "eligibleCount": 3921,
+      "totalFetched": 52391,
+      "pages": 53
+    },
+    "0473": {
+      "eligibleCount": 643,
+      "totalFetched": 15587,
+      "pages": 16
+    },
+    "0451": {
+      "eligibleCount": 1902,
+      "totalFetched": 26074,
+      "pages": 27
+    },
+    "0482": {
+      "eligibleCount": 1638,
+      "totalFetched": 20695,
+      "pages": 21
+    },
+    "0498": {
+      "eligibleCount": 2214,
+      "totalFetched": 29680,
+      "pages": 30
+    },
+    "0453": {
+      "eligibleCount": 6547,
+      "totalFetched": 70896,
+      "pages": 71
+    },
+    "0489": {
+      "eligibleCount": 2649,
+      "totalFetched": 34852,
+      "pages": 35
+    },
+    "0512": {
+      "eligibleCount": 1737,
+      "totalFetched": 25324,
+      "pages": 26
+    },
+    "0484": {
+      "eligibleCount": 6222,
+      "totalFetched": 88500,
+      "pages": 89
+    },
+    "0479": {
+      "eligibleCount": 7687,
+      "totalFetched": 121290,
+      "pages": 122
+    },
+    "0523": {
+      "eligibleCount": 996,
+      "totalFetched": 12649,
+      "pages": 13
+    },
+    "0503": {
+      "eligibleCount": 4185,
+      "totalFetched": 80714,
+      "pages": 81
+    },
+    "0502": {
+      "eligibleCount": 4278,
+      "totalFetched": 93809,
+      "pages": 94
+    },
+    "0513": {
+      "eligibleCount": 3340,
+      "totalFetched": 46477,
+      "pages": 47
+    },
+    "0394": {
+      "eligibleCount": 28504,
+      "totalFetched": 343322,
+      "pages": 344
+    },
+    "0532": {
+      "eligibleCount": 1035,
+      "totalFetched": 14037,
+      "pages": 15
+    },
+    "0534": {
+      "eligibleCount": 909,
+      "totalFetched": 16112,
+      "pages": 17
+    },
+    "0505": {
+      "eligibleCount": 6576,
+      "totalFetched": 99916,
+      "pages": 100
+    },
+    "0531": {
+      "eligibleCount": 1944,
+      "totalFetched": 35052,
+      "pages": 36
+    },
+    "0547": {
+      "eligibleCount": 1335,
+      "totalFetched": 20935,
+      "pages": 21
+    },
+    "0542": {
+      "eligibleCount": 1410,
+      "totalFetched": 33409,
+      "pages": 34
+    },
+    "0553": {
+      "eligibleCount": 1546,
+      "totalFetched": 20059,
+      "pages": 21
+    },
+    "0537": {
+      "eligibleCount": 3157,
+      "totalFetched": 45810,
+      "pages": 46
+    },
+    "0556": {
+      "eligibleCount": 1339,
+      "totalFetched": 27688,
+      "pages": 28
+    },
+    "0589": {
+      "eligibleCount": 525,
+      "totalFetched": 8607,
+      "pages": 9
+    },
+    "0569": {
+      "eligibleCount": 3121,
+      "totalFetched": 33296,
+      "pages": 34
+    },
+    "0579": {
+      "eligibleCount": 2074,
+      "totalFetched": 38695,
+      "pages": 39
+    },
+    "0590": {
+      "eligibleCount": 1326,
+      "totalFetched": 18740,
+      "pages": 19
+    },
+    "0575": {
+      "eligibleCount": 4149,
+      "totalFetched": 65064,
+      "pages": 66
+    },
+    "0546": {
+      "eligibleCount": 6350,
+      "totalFetched": 111265,
+      "pages": 112
+    },
+    "0610": {
+      "eligibleCount": 1383,
+      "totalFetched": 15364,
+      "pages": 16
+    },
+    "0597": {
+      "eligibleCount": 3092,
+      "totalFetched": 58240,
+      "pages": 59
+    },
+    "0613": {
+      "eligibleCount": 1180,
+      "totalFetched": 21153,
+      "pages": 22
+    },
+    "0606": {
+      "eligibleCount": 4634,
+      "totalFetched": 64247,
+      "pages": 65
+    },
+    "0626": {
+      "eligibleCount": 922,
+      "totalFetched": 22302,
+      "pages": 23
+    },
+    "0622": {
+      "eligibleCount": 2953,
+      "totalFetched": 56147,
+      "pages": 57
+    },
+    "0603": {
+      "eligibleCount": 4435,
+      "totalFetched": 81008,
+      "pages": 82
+    },
+    "0627": {
+      "eligibleCount": 4103,
+      "totalFetched": 38547,
+      "pages": 39
+    },
+    "0638": {
+      "eligibleCount": 1652,
+      "totalFetched": 19198,
+      "pages": 20
+    },
+    "0629": {
+      "eligibleCount": 1952,
+      "totalFetched": 48234,
+      "pages": 49
+    },
+    "0363": {
+      "eligibleCount": 56001,
+      "totalFetched": 744504,
+      "pages": 745
+    },
+    "0632": {
+      "eligibleCount": 2378,
+      "totalFetched": 34567,
+      "pages": 35
+    },
+    "0654": {
+      "eligibleCount": 2409,
+      "totalFetched": 28860,
+      "pages": 29
+    },
+    "0664": {
+      "eligibleCount": 2542,
+      "totalFetched": 32492,
+      "pages": 33
+    },
+    "0677": {
+      "eligibleCount": 1232,
+      "totalFetched": 20224,
+      "pages": 21
+    },
+    "0637": {
+      "eligibleCount": 4065,
+      "totalFetched": 72481,
+      "pages": 73
+    },
+    "0678": {
+      "eligibleCount": 697,
+      "totalFetched": 12072,
+      "pages": 13
+    },
+    "0668": {
+      "eligibleCount": 2677,
+      "totalFetched": 36584,
+      "pages": 37
+    },
+    "0642": {
+      "eligibleCount": 3782,
+      "totalFetched": 56540,
+      "pages": 57
+    },
+    "0687": {
+      "eligibleCount": 1685,
+      "totalFetched": 37100,
+      "pages": 38
+    },
+    "0703": {
+      "eligibleCount": 2565,
+      "totalFetched": 35408,
+      "pages": 36
+    },
+    "0716": {
+      "eligibleCount": 2334,
+      "totalFetched": 33999,
+      "pages": 34
+    },
+    "0715": {
+      "eligibleCount": 2458,
+      "totalFetched": 38910,
+      "pages": 39
+    },
+    "0744": {
+      "eligibleCount": 408,
+      "totalFetched": 5901,
+      "pages": 6
+    },
+    "0743": {
+      "eligibleCount": 1591,
+      "totalFetched": 21524,
+      "pages": 22
+    },
+    "0717": {
+      "eligibleCount": 3439,
+      "totalFetched": 71757,
+      "pages": 72
+    },
+    "0755": {
+      "eligibleCount": 466,
+      "totalFetched": 6398,
+      "pages": 7
+    },
+    "0718": {
+      "eligibleCount": 5503,
+      "totalFetched": 104298,
+      "pages": 105
+    },
+    "0753": {
+      "eligibleCount": 1031,
+      "totalFetched": 19647,
+      "pages": 20
+    },
+    "0748": {
+      "eligibleCount": 3090,
+      "totalFetched": 46808,
+      "pages": 47
+    },
+    "0737": {
+      "eligibleCount": 4591,
+      "totalFetched": 46557,
+      "pages": 47
+    },
+    "0757": {
+      "eligibleCount": 904,
+      "totalFetched": 19727,
+      "pages": 20
+    },
+    "0765": {
+      "eligibleCount": 463,
+      "totalFetched": 9219,
+      "pages": 10
+    },
+    "0518": {
+      "eligibleCount": 26678,
+      "totalFetched": 456867,
+      "pages": 457
+    },
+    "0766": {
+      "eligibleCount": 771,
+      "totalFetched": 16451,
+      "pages": 17
+    },
+    "0779": {
+      "eligibleCount": 1035,
+      "totalFetched": 12578,
+      "pages": 13
+    },
+    "0762": {
+      "eligibleCount": 2592,
+      "totalFetched": 35312,
+      "pages": 36
+    },
+    "0770": {
+      "eligibleCount": 1529,
+      "totalFetched": 29689,
+      "pages": 30
+    },
+    "0777": {
+      "eligibleCount": 1985,
+      "totalFetched": 30664,
+      "pages": 31
+    },
+    "0736": {
+      "eligibleCount": 7086,
+      "totalFetched": 114671,
+      "pages": 115
+    },
+    "0785": {
+      "eligibleCount": 1092,
+      "totalFetched": 15835,
+      "pages": 16
+    },
+    "0784": {
+      "eligibleCount": 2009,
+      "totalFetched": 24243,
+      "pages": 25
+    },
+    "0797": {
+      "eligibleCount": 1965,
+      "totalFetched": 33434,
+      "pages": 34
+    },
+    "0809": {
+      "eligibleCount": 1457,
+      "totalFetched": 21262,
+      "pages": 22
+    },
+    "0798": {
+      "eligibleCount": 1910,
+      "totalFetched": 32365,
+      "pages": 33
+    },
+    "0794": {
+      "eligibleCount": 2855,
+      "totalFetched": 61363,
+      "pages": 62
+    },
+    "0758": {
+      "eligibleCount": 10759,
+      "totalFetched": 142582,
+      "pages": 143
+    },
+    "0823": {
+      "eligibleCount": 1089,
+      "totalFetched": 25032,
+      "pages": 26
+    },
+    "0820": {
+      "eligibleCount": 1480,
+      "totalFetched": 29149,
+      "pages": 30
+    },
+    "0824": {
+      "eligibleCount": 1930,
+      "totalFetched": 31907,
+      "pages": 32
+    },
+    "0840": {
+      "eligibleCount": 2271,
+      "totalFetched": 24073,
+      "pages": 25
+    },
+    "0847": {
+      "eligibleCount": 1567,
+      "totalFetched": 21651,
+      "pages": 22
+    },
+    "0848": {
+      "eligibleCount": 672,
+      "totalFetched": 10097,
+      "pages": 11
+    },
+    "0845": {
+      "eligibleCount": 2932,
+      "totalFetched": 55009,
+      "pages": 56
+    },
+    "0796": {
+      "eligibleCount": 9357,
+      "totalFetched": 122732,
+      "pages": 123
+    },
+    "0826": {
+      "eligibleCount": 5561,
+      "totalFetched": 87752,
+      "pages": 88
+    },
+    "0772": {
+      "eligibleCount": 11373,
+      "totalFetched": 196184,
+      "pages": 197
+    },
+    "0851": {
+      "eligibleCount": 1224,
+      "totalFetched": 17303,
+      "pages": 18
+    },
+    "0828": {
+      "eligibleCount": 4734,
+      "totalFetched": 75223,
+      "pages": 76
+    },
+    "0866": {
+      "eligibleCount": 442,
+      "totalFetched": 10098,
+      "pages": 11
+    },
+    "0858": {
+      "eligibleCount": 1263,
+      "totalFetched": 21841,
+      "pages": 22
+    },
+    "0861": {
+      "eligibleCount": 1336,
+      "totalFetched": 29785,
+      "pages": 30
+    },
+    "0873": {
+      "eligibleCount": 966,
+      "totalFetched": 13946,
+      "pages": 14
+    },
+    "0865": {
+      "eligibleCount": 2572,
+      "totalFetched": 35070,
+      "pages": 36
+    },
+    "0879": {
+      "eligibleCount": 1430,
+      "totalFetched": 21773,
+      "pages": 22
+    },
+    "0867": {
+      "eligibleCount": 2886,
+      "totalFetched": 39675,
+      "pages": 40
+    },
+    "0852": {
+      "eligibleCount": 1213,
+      "totalFetched": 33875,
+      "pages": 34
+    },
+    "0880": {
+      "eligibleCount": 1370,
+      "totalFetched": 24460,
+      "pages": 25
+    },
+    "0889": {
+      "eligibleCount": 520,
+      "totalFetched": 9962,
+      "pages": 10
+    },
+    "0888": {
+      "eligibleCount": 1056,
+      "totalFetched": 18516,
+      "pages": 19
+    },
+    "0882": {
+      "eligibleCount": 2122,
+      "totalFetched": 38812,
+      "pages": 39
+    },
+    "0899": {
+      "eligibleCount": 1201,
+      "totalFetched": 21793,
+      "pages": 22
+    },
+    "0907": {
+      "eligibleCount": 1118,
+      "totalFetched": 18659,
+      "pages": 19
+    },
+    "0893": {
+      "eligibleCount": 2079,
+      "totalFetched": 25478,
+      "pages": 26
+    },
+    "0938": {
+      "eligibleCount": 988,
+      "totalFetched": 16479,
+      "pages": 17
+    },
+    "0928": {
+      "eligibleCount": 2883,
+      "totalFetched": 49368,
+      "pages": 50
+    },
+    "0944": {
+      "eligibleCount": 1185,
+      "totalFetched": 15197,
+      "pages": 16
+    },
+    "0965": {
+      "eligibleCount": 954,
+      "totalFetched": 9557,
+      "pages": 10
+    },
+    "0946": {
+      "eligibleCount": 2682,
+      "totalFetched": 34977,
+      "pages": 35
+    },
+    "0971": {
+      "eligibleCount": 649,
+      "totalFetched": 14956,
+      "pages": 15
+    },
+    "0981": {
+      "eligibleCount": 348,
+      "totalFetched": 8731,
+      "pages": 9
+    },
+    "0917": {
+      "eligibleCount": 5557,
+      "totalFetched": 92587,
+      "pages": 93
+    },
+    "0855": {
+      "eligibleCount": 9827,
+      "totalFetched": 159078,
+      "pages": 160
+    },
+    "0986": {
+      "eligibleCount": 882,
+      "totalFetched": 14898,
+      "pages": 15
+    },
+    "0957": {
+      "eligibleCount": 3017,
+      "totalFetched": 45130,
+      "pages": 46
+    },
+    "0935": {
+      "eligibleCount": 4949,
+      "totalFetched": 93800,
+      "pages": 94
+    },
+    "0994": {
+      "eligibleCount": 850,
+      "totalFetched": 18095,
+      "pages": 19
+    },
+    "0984": {
+      "eligibleCount": 3039,
+      "totalFetched": 40004,
+      "pages": 41
+    },
+    "0988": {
+      "eligibleCount": 3188,
+      "totalFetched": 42011,
+      "pages": 43
+    },
+    "0983": {
+      "eligibleCount": 5229,
+      "totalFetched": 79334,
+      "pages": 80
+    },
+    "0599": {
+      "eligibleCount": 53844,
+      "totalFetched": 786034,
+      "pages": 787
+    },
+    "0995": {
+      "eligibleCount": 8504,
+      "totalFetched": 113323,
+      "pages": 114
+    }
+  }
 }

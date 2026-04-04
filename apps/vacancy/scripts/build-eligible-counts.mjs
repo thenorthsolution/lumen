@@ -4,8 +4,9 @@ import { fileURLToPath } from "node:url";
 
 const BAG_OGC_BASE = "https://api.pdok.nl/kadaster/bag/ogc/v2";
 const PAGE_LIMIT = 1000;
-const BOUWJAAR_MIN = 1975;
-const OPPERVLAKTE_MIN = 300;
+const CONCURRENCY = 8;
+const BOUWJAAR_MIN = 0;
+const OPPERVLAKTE_MIN = 0;
 const GEBRUIKSDOELEN = new Set([
   "kantoorfunctie",
   "winkelfunctie",
@@ -79,16 +80,44 @@ async function countEligibleForGemeente(gemeente) {
 
 async function main() {
   const gemeenten = Object.values(await loadGemeenten());
-  const counts = {};
+  const existing = await loadExistingCounts();
+  const counts = { ...existing.counts };
+  const pending = gemeenten.filter((gemeente) => !counts[gemeente.code]);
 
-  for (const gemeente of gemeenten) {
-    const result = await countEligibleForGemeente(gemeente);
-    counts[gemeente.code] = result;
-    console.log(
-      `${gemeente.code} ${gemeente.name}: ${result.eligibleCount} eligible`,
-    );
+  let index = 0;
+
+  async function worker() {
+    while (index < pending.length) {
+      const gemeente = pending[index];
+      index += 1;
+      if (!gemeente) return;
+
+      const result = await countEligibleForGemeente(gemeente);
+      counts[gemeente.code] = result;
+      console.log(
+        `${gemeente.code} ${gemeente.name}: ${result.eligibleCount} eligible`,
+      );
+      await persistCounts(counts);
+    }
   }
 
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, pending.length) }, () => worker()),
+  );
+
+  await persistCounts(counts);
+  console.log(`Wrote eligible counts to ${outJson}`);
+}
+
+async function loadExistingCounts() {
+  try {
+    return JSON.parse(await readFile(outJson, "utf8"));
+  } catch {
+    return { counts: {} };
+  }
+}
+
+async function persistCounts(counts) {
   await mkdir(outDir, { recursive: true });
   await writeFile(
     outJson,
@@ -106,7 +135,6 @@ async function main() {
       2,
     )}\n`,
   );
-  console.log(`Wrote eligible counts to ${outJson}`);
 }
 
 main().catch((err) => {
