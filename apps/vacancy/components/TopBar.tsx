@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { searchGemeenten, type Gemeente } from "@lumen/pdok-client";
+import {
+  fetchEligibleCountForGemeente,
+  SHORTLIST_COUNT_FILTERS,
+} from "@/lib/bag-fetch";
 import ELIGIBLE_COUNTS from "@/data/eligible-counts.generated.json";
 import styles from "./TopBar.module.css";
 
@@ -18,19 +22,30 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Gemeente[]>([]);
+  const [liveCounts, setLiveCounts] = useState<Record<string, number>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const visibleMissingResults = useMemo(
+    () =>
+      results.filter(
+        (g) =>
+          getStoredEligibleCount(g.code) === null && liveCounts[g.code] === undefined,
+      ),
+    [results, liveCounts],
+  );
 
   useEffect(() => {
     if (searchOpen) {
       inputRef.current?.focus();
-      setResults(sortGemeenten(searchGemeenten("")).slice(0, 12));
+      setResults(filterGemeentenWithPotential(sortGemeenten(searchGemeenten("")), liveCounts).slice(0, 12));
     }
-  }, [searchOpen]);
+  }, [searchOpen, liveCounts]);
 
   useEffect(() => {
-    setResults(sortGemeenten(searchGemeenten(query)).slice(0, 12));
-  }, [query]);
+    setResults(
+      filterGemeentenWithPotential(sortGemeenten(searchGemeenten(query)), liveCounts).slice(0, 12),
+    );
+  }, [query, liveCounts]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -45,6 +60,40 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!searchOpen || visibleMissingResults.length === 0) return;
+
+    const controller = new AbortController();
+
+    Promise.all(
+      visibleMissingResults.map(async (g) => {
+        const count = await fetchEligibleCountForGemeente(g, controller.signal);
+        return [g.code, count] as const;
+      }),
+    )
+      .then((pairs) => {
+        if (controller.signal.aborted || pairs.length === 0) return;
+        setLiveCounts((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          for (const [code, count] of pairs) {
+            if (next[code] !== count) {
+              next[code] = count;
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      })
+      .catch((err) => {
+        if ((err as Error).name !== "AbortError") {
+          console.error("Eligible count fetch fout:", err);
+        }
+      });
+
+    return () => controller.abort();
+  }, [searchOpen, visibleMissingResults]);
 
   function handleSelect(code: string) {
     onGemeenteChange(code);
@@ -163,7 +212,7 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
                       <span className={styles.resultProvince}>{g.province}</span>
                     </span>
                     <span className={styles.resultMeta}>
-                      {formatEligibleCount(g.code)}
+                      {formatEligibleCount(g.code, liveCounts)}
                     </span>
                   </button>
                 </li>
@@ -208,24 +257,66 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
   );
 }
 
-function formatEligibleCount(code: string): string {
+function formatEligibleCount(
+  code: string,
+  liveCounts: Record<string, number>,
+): string {
+  const stored = getStoredEligibleCount(code);
+  const value = stored ?? liveCounts[code];
+  return value === undefined ? "laden..." : `${value.toLocaleString("nl-NL")} cand.`;
+}
+
+function sortGemeenten(gemeenten: Gemeente[]): Gemeente[] {
+  return [...gemeenten].sort((a, b) => {
+    const countA = getStoredEligibleCount(a.code) ?? -1;
+    const countB = getStoredEligibleCount(b.code) ?? -1;
+    if (countA !== countB) return countB - countA;
+    return a.name.localeCompare(b.name, "nl");
+  });
+}
+
+function getStoredEligibleCount(code: string): number | null {
+  const filters = ELIGIBLE_COUNTS.filters as
+    | {
+        bouwjaarMin?: number;
+        oppervlakteMin?: number;
+        gebruiksdoelen?: string[];
+      }
+    | undefined;
+  const uses = filters?.gebruiksdoelen ?? [];
+  const matchesShortlistFilters =
+    filters?.bouwjaarMin === SHORTLIST_COUNT_FILTERS.bouwjaarMin &&
+    filters?.oppervlakteMin === SHORTLIST_COUNT_FILTERS.oppervlakteMin &&
+    uses.length === SHORTLIST_COUNT_FILTERS.gebruiksdoelen.length &&
+    uses.every((use) =>
+      SHORTLIST_COUNT_FILTERS.gebruiksdoelen.some(
+        (candidate) => candidate === use,
+      ),
+    );
+
+  if (!matchesShortlistFilters) return null;
+
   const counts = ELIGIBLE_COUNTS.counts as Record<
     string,
     { eligibleCount?: number } | undefined
   >;
   const value = counts[code]?.eligibleCount;
-  return value === undefined ? "—" : `${value.toLocaleString("nl-NL")} cand.`;
+  return value === undefined ? null : value;
 }
 
-function sortGemeenten(gemeenten: Gemeente[]): Gemeente[] {
-  const counts = ELIGIBLE_COUNTS.counts as Record<
-    string,
-    { eligibleCount?: number } | undefined
-  >;
-  return [...gemeenten].sort((a, b) => {
-    const countA = counts[a.code]?.eligibleCount ?? -1;
-    const countB = counts[b.code]?.eligibleCount ?? -1;
-    if (countA !== countB) return countB - countA;
-    return a.name.localeCompare(b.name, "nl");
+function getEligibleCount(
+  code: string,
+  liveCounts: Record<string, number>,
+): number | null {
+  return getStoredEligibleCount(code) ?? liveCounts[code] ?? null;
+}
+
+function filterGemeentenWithPotential(
+  gemeenten: Gemeente[],
+  liveCounts: Record<string, number>,
+): Gemeente[] {
+  return gemeenten.filter((gemeente) => {
+    const count = getEligibleCount(gemeente.code, liveCounts);
+    return count === null || count > 0;
   });
 }
