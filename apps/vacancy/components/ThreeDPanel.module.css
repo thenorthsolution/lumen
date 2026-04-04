@@ -1,0 +1,128 @@
+.overlay {
+  position: absolute;
+  inset: 12px;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  pointer-events: none;
+}
+
+.panel {
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background:
+    linear-gradient(180deg, rgba(10, 14, 18, 0.96), rgba(13, 17, 23, 0.98));
+  border: 1px solid rgba(139, 148, 158, 0.28);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(139, 148, 158, 0.18);
+}
+
+.headerMeta {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(201, 209, 217, 0.7);
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f0f6fc;
+}
+
+.subtitle {
+  margin: 8px 0 0;
+  max-width: 760px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(201, 209, 217, 0.78);
+}
+
+.closeButton {
+  border: 1px solid rgba(139, 148, 158, 0.28);
+  background: rgba(22, 27, 34, 0.85);
+  color: #f0f6fc;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.viewerWrap {
+  position: relative;
+  min-height: 520px;
+  background: #06080c;
+}
+
+.viewer {
+  position: absolute;
+  inset: 0;
+}
+
+.overlayMessage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  background: rgba(6, 8, 12, 0.72);
+  color: #f0f6fc;
+  font-size: 14px;
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  border-top: 1px solid rgba(139, 148, 158, 0.18);
+  color: rgba(201, 209, 217, 0.72);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .overlay {
+    inset: 0;
+  }
+
+  .panel {
+    border-radius: 0;
+  }
+
+  .header,
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .viewerWrap {
+    min-height: 360px;
+  }
+}
