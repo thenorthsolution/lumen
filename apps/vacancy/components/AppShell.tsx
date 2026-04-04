@@ -6,6 +6,7 @@ import { SidePanel } from "./SidePanel";
 import { MapCanvas } from "./MapCanvas";
 import { DetailPanel } from "./DetailPanel";
 import { StatBar } from "./StatBar";
+import { ThreeDPanel } from "./ThreeDPanel";
 import { getDefaultGemeente } from "@lumen/pdok-client";
 import {
   ALL_PAND_STATUSES,
@@ -37,6 +38,7 @@ export interface VboFeatureProperties {
   identificatie: string;
   status: string;
   pandStatus?: string;
+  pandIdentificatie?: string;
   bagUri?: string;
   gebruiksdoel: string;
   oppervlakte: number;
@@ -77,6 +79,13 @@ export function AppShell() {
   const [layers, setLayers] = useState<LayerVisibility>(DEFAULT_LAYERS);
   const [basemap, setBasemap] = useState<BasemapMode>("brt");
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [view3DNonce, setView3DNonce] = useState(0);
+  const [isAdvanced3DOpen, setIsAdvanced3DOpen] = useState(false);
+  const [rotate3DCommand, setRotate3DCommand] = useState<{
+    nonce: number;
+    delta: number;
+    reset?: boolean;
+  }>({ nonce: 0, delta: 0 });
   const [selectedFeature, setSelectedFeature] = useState<VboFeature | null>(
     null,
   );
@@ -128,6 +137,9 @@ export function AppShell() {
           basemap={basemap}
           layers={layers}
           filters={filters}
+          selectedFeature={selectedFeature}
+          view3DNonce={view3DNonce}
+          rotate3DCommand={rotate3DCommand}
           onFeatureSelect={handleFeatureSelect}
           onDataLoaded={handleDataLoaded}
           onLoadStart={() => setIsLoading(true)}
@@ -137,7 +149,35 @@ export function AppShell() {
         {selectedFeature && (
           <DetailPanel
             feature={selectedFeature}
+            onViewIn3D={() => setView3DNonce((n) => n + 1)}
+            onOpenAdvanced3D={() => setIsAdvanced3DOpen(true)}
+            onRotateLeft={() =>
+              setRotate3DCommand((prev) => ({
+                nonce: prev.nonce + 1,
+                delta: 25,
+              }))
+            }
+            onRotateRight={() =>
+              setRotate3DCommand((prev) => ({
+                nonce: prev.nonce + 1,
+                delta: -25,
+              }))
+            }
+            onReset3D={() =>
+              setRotate3DCommand((prev) => ({
+                nonce: prev.nonce + 1,
+                delta: 0,
+                reset: true,
+              }))
+            }
             onClose={() => setSelectedFeature(null)}
+          />
+        )}
+
+        {selectedFeature && isAdvanced3DOpen && (
+          <ThreeDPanel
+            feature={selectedFeature}
+            onClose={() => setIsAdvanced3DOpen(false)}
           />
         )}
       </div>
