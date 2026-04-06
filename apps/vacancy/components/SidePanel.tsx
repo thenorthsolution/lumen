@@ -259,7 +259,7 @@ export function SidePanel({
           vereist.
         </p>
         <a
-          href="https://github.com/thenorthsolution/lumen/blob/main/apps/leegstandsradar/TOOL.md"
+          href="https://github.com/thenorthsolution/lumen/blob/main/apps/vacancy/TOOL.md"
           target="_blank"
           rel="noopener noreferrer"
           className={styles.methLink}

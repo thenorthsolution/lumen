@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { searchGemeenten, type Gemeente } from "@lumen/pdok-client";
+import type { AiSearchHit } from "./AppShell";
 import {
   fetchEligibleCountForGemeente,
   SHORTLIST_COUNT_FILTERS,
@@ -12,17 +13,37 @@ import styles from "./TopBar.module.css";
 interface TopBarProps {
   gemeente: Gemeente;
   onGemeenteChange: (code: string) => void;
+  onAiSearchSelect: (hit: AiSearchHit) => void;
+  onAiSearchResults: (hits: AiSearchHit[]) => void;
+  onAiSearchStateChange: (state: { loading: boolean; query: string }) => void;
   isLoading: boolean;
+  activeTab: NavTab;
+  onTabChange: (tab: NavTab) => void;
 }
 
-type NavTab = "kaart" | "tabel" | "methodologie";
+export type NavTab = "kaart" | "tabel" | "methodologie";
 
-export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
-  const [activeTab, setActiveTab] = useState<NavTab>("kaart");
+export function TopBar({
+  gemeente,
+  onGemeenteChange,
+  onAiSearchSelect,
+  onAiSearchResults,
+  onAiSearchStateChange,
+  isLoading,
+  activeTab,
+  onTabChange,
+}: TopBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Gemeente[]>([]);
   const [liveCounts, setLiveCounts] = useState<Record<string, number>>({});
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiResults, setAiResults] = useState<AiSearchHit[]>([]);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiHasSearched, setAiHasSearched] = useState(false);
+  const aiWrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const visibleMissingResults = useMemo(
@@ -55,6 +76,9 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
       ) {
         setSearchOpen(false);
         setQuery("");
+      }
+      if (aiWrapRef.current && !aiWrapRef.current.contains(e.target as Node)) {
+        setAiOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -101,6 +125,51 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
     setQuery("");
   }
 
+  async function handleAiSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const trimmed = aiQuery.trim();
+    if (!trimmed) return;
+
+    setAiLoading(true);
+    setAiError("");
+    setAiOpen(true);
+    setAiHasSearched(true);
+    onAiSearchStateChange({ loading: true, query: trimmed });
+
+    try {
+      const url = new URL("/api/ai-search", window.location.origin);
+      url.searchParams.set("q", trimmed);
+      url.searchParams.set("limit", "8");
+
+      const response = await fetch(url.toString());
+      const data = (await response.json()) as {
+        error?: string;
+        results?: AiSearchHit[];
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "AI search mislukt.");
+      }
+
+      const hits = data.results ?? [];
+      setAiResults(hits);
+      onAiSearchResults(hits);
+    } catch (error) {
+      setAiResults([]);
+      onAiSearchResults([]);
+      setAiError((error as Error).message);
+    } finally {
+      setAiLoading(false);
+      onAiSearchStateChange({ loading: false, query: trimmed });
+    }
+  }
+
+  function handleAiResultClick(hit: AiSearchHit) {
+    onAiSearchSelect(hit);
+    setAiOpen(false);
+    setAiQuery("");
+  }
+
   return (
     <header className={styles.topbar}>
       {/* Logo */}
@@ -116,7 +185,7 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
           <button
             key={tab}
             className={`${styles.navItem} ${activeTab === tab ? styles.navItemActive : ""}`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => onTabChange(tab)}
           >
             {tab}
           </button>
@@ -132,6 +201,67 @@ export function TopBar({ gemeente, onGemeenteChange, isLoading }: TopBarProps) {
           <span className={styles.loadingText}>laden...</span>
         </div>
       )}
+
+      <div className={styles.aiWrap} ref={aiWrapRef}>
+        <form className={styles.aiForm} onSubmit={handleAiSubmit}>
+          <input
+            type="text"
+            className={styles.aiInput}
+            placeholder="AI zoekvraag, bv. groot nieuw pand dat gesloopt gaat worden"
+            value={aiQuery}
+            onChange={(event) => setAiQuery(event.target.value)}
+            onFocus={() => {
+              if (aiHasSearched || aiResults.length > 0 || aiError) {
+                setAiOpen(true);
+              }
+            }}
+            aria-label="AI zoekvraag"
+          />
+          <button type="submit" className={styles.aiButton}>
+            AI zoek
+          </button>
+        </form>
+
+        {aiOpen && (aiLoading || aiError || aiHasSearched) && (
+          <div className={styles.aiDropdown}>
+            {aiLoading ? (
+              <div className={styles.aiState}>AI zoekresultaten laden...</div>
+            ) : aiError ? (
+              <div className={styles.aiState}>{aiError}</div>
+            ) : (
+              <ul className={styles.aiList}>
+                {aiResults.map((hit) => (
+                  <li key={hit.id}>
+                    <button
+                      type="button"
+                      className={styles.aiResult}
+                      onClick={() => handleAiResultClick(hit)}
+                    >
+                      <span className={styles.aiResultMain}>
+                        <span className={styles.aiResultTitle}>
+                          {hit.gebruiksdoel || "Object"} · {hit.woonplaatsnaam}
+                        </span>
+                        <span className={styles.aiResultSub}>
+                          {hit.status || "status onbekend"} ·{" "}
+                          {hit.oppervlakte
+                            ? `${Math.round(hit.oppervlakte).toLocaleString("nl-NL")} m²`
+                            : "opp. onbekend"}
+                        </span>
+                      </span>
+                      <span className={styles.aiResultMeta}>
+                        {Math.round(hit.hybrid_score * 100)}%
+                      </span>
+                    </button>
+                  </li>
+                ))}
+                {aiResults.length === 0 && (
+                  <li className={styles.aiState}>Geen AI matches gevonden.</li>
+                )}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Gemeente selector */}
       <div className={styles.gemeenteWrap} ref={dropdownRef}>
@@ -281,16 +411,34 @@ function getStoredEligibleCount(code: string): number | null {
         bouwjaarMin?: number;
         oppervlakteMin?: number;
         gebruiksdoelen?: string[];
+        vboStatuses?: string[];
+        pandStatuses?: string[];
       }
     | undefined;
   const uses = filters?.gebruiksdoelen ?? [];
+  const vboStatuses = filters?.vboStatuses ?? [];
+  const pandStatuses = filters?.pandStatuses ?? [];
   const matchesShortlistFilters =
-    filters?.bouwjaarMin === SHORTLIST_COUNT_FILTERS.bouwjaarMin &&
-    filters?.oppervlakteMin === SHORTLIST_COUNT_FILTERS.oppervlakteMin &&
+    (filters?.bouwjaarMin ?? SHORTLIST_COUNT_FILTERS.bouwjaarMin) ===
+      SHORTLIST_COUNT_FILTERS.bouwjaarMin &&
+    (filters?.oppervlakteMin ?? SHORTLIST_COUNT_FILTERS.oppervlakteMin) ===
+      SHORTLIST_COUNT_FILTERS.oppervlakteMin &&
     uses.length === SHORTLIST_COUNT_FILTERS.gebruiksdoelen.length &&
     uses.every((use) =>
       SHORTLIST_COUNT_FILTERS.gebruiksdoelen.some(
         (candidate) => candidate === use,
+      ),
+    ) &&
+    vboStatuses.length === SHORTLIST_COUNT_FILTERS.vboStatuses.length &&
+    vboStatuses.every((status) =>
+      SHORTLIST_COUNT_FILTERS.vboStatuses.some(
+        (candidate) => candidate === status,
+      ),
+    ) &&
+    pandStatuses.length === SHORTLIST_COUNT_FILTERS.pandStatuses.length &&
+    pandStatuses.every((status) =>
+      SHORTLIST_COUNT_FILTERS.pandStatuses.some(
+        (candidate) => candidate === status,
       ),
     );
 

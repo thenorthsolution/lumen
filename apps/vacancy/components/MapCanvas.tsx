@@ -1,21 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import maplibregl from "maplibre-gl";
 import type { Gemeente } from "@lumen/pdok-client";
+import type { FilterSpecification } from "maplibre-gl";
 import type {
+  AiSearchHit,
   BasemapMode,
   LayerVisibility,
   FilterState,
   VboFeature,
   VboFeatureCollection,
 } from "./AppShell";
-import { fetchAndScoreGemeente, fetchPandGeometries } from "@/lib/bag-fetch";
+import { fetchPandGeometries } from "@/lib/bag-fetch";
 import styles from "./MapCanvas.module.css";
 
 // MapLibre source/layer IDs
 const SOURCE_LEEGSTAND = "leegstand";
 const SOURCE_PANDEN = "panden";
+const SOURCE_AI_RESULTS = "ai-results";
 const SOURCE_BRT = "brt";
 const SOURCE_LUCHTFOTO = "luchtfoto";
 const LAYER_BRT = "brt-tiles";
@@ -26,6 +29,7 @@ const LAYER_LAAG = "leegstand-laag";
 const LAYER_PERCELEN = "leegstand-percelen";
 const LAYER_PERCELEN_3D = "leegstand-percelen-3d";
 const LAYER_HOOG_OUTLINE = "leegstand-hoog-outline";
+const LAYER_AI_RESULTS = "ai-results-points";
 
 // MapLibre paint properties do NOT support CSS variables — use resolved hex values
 const COLORS = {
@@ -40,13 +44,27 @@ interface MapCanvasProps {
   basemap: BasemapMode;
   layers: LayerVisibility;
   filters: FilterState;
+  isLoading: boolean;
+  aiSearchResults: AiSearchHit[];
   selectedFeature: VboFeature | null;
   selectedFeatureId: string | null;
+  focusSelectedNonce: number;
   view3DNonce: number;
   rotate3DCommand: {
     nonce: number;
     delta: number;
     reset?: boolean;
+  };
+  detailLoadState: {
+    visible: boolean;
+    step: number;
+    total: number;
+    status: string;
+    tier: string;
+  };
+  aiSearchState: {
+    loading: boolean;
+    query: string;
   };
   onFeatureSelect: (feature: VboFeature | null) => void;
   onDataLoaded: (fc: VboFeatureCollection) => void;
@@ -58,10 +76,15 @@ export function MapCanvas({
   basemap,
   layers,
   filters,
+  isLoading,
+  aiSearchResults,
   selectedFeature,
   selectedFeatureId,
+  focusSelectedNonce,
   view3DNonce,
   rotate3DCommand,
+  detailLoadState,
+  aiSearchState,
   onFeatureSelect,
   onDataLoaded,
   onLoadStart,
@@ -73,6 +96,27 @@ export function MapCanvas({
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const is3DModeRef = useRef(false);
   const userBasemapRef = useRef<BasemapMode>(basemap);
+  const last2DViewRef = useRef<{
+    center: [number, number];
+    zoom: number;
+  } | null>(null);
+  const [is3DActive, setIs3DActive] = useState(false);
+  const [selectionPopoverPos, setSelectionPopoverPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [scanPopovers, setScanPopovers] = useState<
+    Array<{
+      id: string;
+      lngLat: [number, number];
+      label: string;
+      phase: string;
+      compact?: boolean;
+    }>
+  >([]);
+  const [cityLoadDots, setCityLoadDots] = useState<
+    Array<{ id: string; lngLat: [number, number] }>
+  >([]);
 
   // Initialise map once
   useEffect(() => {
@@ -105,6 +149,10 @@ export function MapCanvas({
 
     map.on("load", () => {
       map.addSource(SOURCE_PANDEN, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addSource(SOURCE_AI_RESULTS, {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
@@ -238,15 +286,45 @@ export function MapCanvas({
         },
         filter: ["in", ["get", "score_tier"], ["literal", ["hoog", "middel"]]],
       });
+      map.addLayer({
+        id: LAYER_AI_RESULTS,
+        type: "circle",
+        source: SOURCE_AI_RESULTS,
+        paint: {
+          "circle-color": "#58a6ff",
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            6,
+            16,
+            10,
+          ],
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1.5,
+          "circle-opacity": 0.92,
+        },
+      });
 
       // Click handler
-      const clickableLayers = [LAYER_HOOG, LAYER_MIDDEL, LAYER_LAAG];
+      const clickableLayers = [
+        LAYER_HOOG,
+        LAYER_MIDDEL,
+        LAYER_LAAG,
+        LAYER_AI_RESULTS,
+      ];
       clickableLayers.forEach((layerId) => {
         map.on("click", layerId, (e) => {
           const feature = e.features?.[0];
           if (!feature) return;
 
           const props = feature.properties as Record<string, unknown>;
+          if (layerId === LAYER_AI_RESULTS) {
+            onFeatureSelect(aiResultPropsToFeature(feature.geometry, props));
+            return;
+          }
+
           const vboFeature: VboFeature = {
             type: "Feature",
             geometry: feature.geometry,
@@ -256,6 +334,13 @@ export function MapCanvas({
               pandStatus: String(props["pandStatus"] ?? ""),
               pandIdentificatie: String(props["pandIdentificatie"] ?? ""),
               bagUri: String(props["bagUri"] ?? ""),
+              openbareruimtenaam: String(props["openbareruimtenaam"] ?? ""),
+              huisnummer: String(props["huisnummer"] ?? ""),
+              huisletter: String(props["huisletter"] ?? ""),
+              huisnummertoevoeging: String(
+                props["huisnummertoevoeging"] ?? "",
+              ),
+              postcode: String(props["postcode"] ?? ""),
               gebruiksdoel: String(props["gebruiksdoel"] ?? ""),
               oppervlakte: Number(props["oppervlakte"] ?? 0),
               bouwjaar: Number(props["bouwjaar"] ?? 0),
@@ -360,7 +445,25 @@ export function MapCanvas({
 
       onLoadStart();
 
-      fetchAndScoreGemeente(gemeente, filters, controller.signal)
+      const url = new URL("/api/shortlist", window.location.origin);
+      url.searchParams.set("gemeenteCode", gemeente.code);
+      url.searchParams.set("bouwjaarMin", String(filters.bouwjaarMin));
+      url.searchParams.set("oppervlakteMin", String(filters.oppervlakteMin));
+      url.searchParams.set("gebruiksdoelen", filters.gebruiksdoelen.join(","));
+      url.searchParams.set("vboStatuses", filters.vboStatuses.join(","));
+      url.searchParams.set("pandStatuses", filters.pandStatuses.join(","));
+
+      fetch(url.toString(), { signal: controller.signal })
+        .then(async (response) => {
+          const payload = (await response.json()) as {
+            error?: string;
+            featureCollection?: VboFeatureCollection;
+          };
+          if (!response.ok || !payload.featureCollection) {
+            throw new Error(payload.error || "Shortlist kon niet worden geladen.");
+          }
+          return payload.featureCollection;
+        })
         .then((fc) => {
           if (controller.signal.aborted) return;
 
@@ -413,10 +516,18 @@ export function MapCanvas({
     if (!selectedFeature || view3DNonce === 0) return;
 
     try {
+      if (!is3DModeRef.current) {
+        const center = map.getCenter();
+        last2DViewRef.current = {
+          center: [center.lng, center.lat],
+          zoom: map.getZoom(),
+        };
+      }
       userBasemapRef.current = basemap;
       is3DModeRef.current = true;
+      setIs3DActive(true);
       map.setLayoutProperty(LAYER_PERCELEN_3D, "visibility", "visible");
-      applyBasemapMode(map, basemap === "brt" ? "hybrid" : basemap);
+      applyBasemapMode(map, "luchtfoto", true);
       map.easeTo({
         center: getFeatureCenter(selectedFeature),
         zoom: Math.max(map.getZoom(), 17.2),
@@ -438,12 +549,18 @@ export function MapCanvas({
 
     try {
       is3DModeRef.current = false;
+      setIs3DActive(false);
       map.setLayoutProperty(LAYER_PERCELEN_3D, "visibility", "none");
-      applyBasemapMode(map, userBasemapRef.current);
+      applyBasemapMode(map, userBasemapRef.current, false);
+      const restoreView = last2DViewRef.current;
       map.easeTo({
+        ...(restoreView ? { center: restoreView.center } : {}),
+        zoom: restoreView
+          ? Math.max(restoreView.zoom - 0.4, 14)
+          : Math.max(map.getZoom() - 1.2, 14),
         pitch: 0,
         bearing: 0,
-        duration: 800,
+        duration: 950,
         essential: true,
       });
     } catch {
@@ -466,11 +583,13 @@ export function MapCanvas({
         essential: true,
       });
       is3DModeRef.current = true;
+      setIs3DActive(true);
       return;
     }
 
     rotateMap(map, rotate3DCommand.delta);
     is3DModeRef.current = true;
+    setIs3DActive(true);
   }, [rotate3DCommand, selectedFeature]);
 
   useEffect(() => {
@@ -478,10 +597,7 @@ export function MapCanvas({
     if (!map || !map.isStyleLoaded()) return;
 
     userBasemapRef.current = basemap;
-    applyBasemapMode(
-      map,
-      is3DModeRef.current && basemap === "brt" ? "hybrid" : basemap,
-    );
+    applyBasemapMode(map, basemap, is3DModeRef.current);
   }, [basemap]);
 
   // Sync layer visibility
@@ -515,7 +631,51 @@ export function MapCanvas({
       "visibility",
       visibility(layers.hoog || layers.middel),
     );
-  }, [layers, selectedFeature]);
+    map.setFilter(
+      LAYER_HOOG_OUTLINE,
+      buildOutlineFilter({
+        selectedFeatureId,
+        showHoog: layers.hoog,
+        showMiddel: layers.middel,
+      }),
+    );
+  }, [layers, selectedFeature, selectedFeatureId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const source = map.getSource(SOURCE_AI_RESULTS) as
+      | maplibregl.GeoJSONSource
+      | undefined;
+    if (!source) return;
+
+    source.setData({
+      type: "FeatureCollection",
+      features: aiSearchResults.map((hit) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [hit.lon, hit.lat],
+        },
+        properties: {
+          identificatie: hit.vbo_identificatie || hit.id,
+          status: hit.status || "",
+          pandStatus: hit.pand_status || "",
+          pandIdentificatie: hit.pand_identificatie || "",
+          openbareruimtenaam: "",
+          huisnummer: "",
+          huisletter: "",
+          huisnummertoevoeging: "",
+          postcode: "",
+          gebruiksdoel: hit.gebruiksdoel || "",
+          oppervlakte: hit.oppervlakte || 0,
+          bouwjaar: hit.bouwjaar || 0,
+          woonplaatsnaam: hit.woonplaatsnaam || hit.gemeente_name || "",
+        },
+      })),
+    });
+  }, [aiSearchResults]);
 
   // Update selected feature outline
   useEffect(() => {
@@ -549,6 +709,119 @@ export function MapCanvas({
       // Layer may not be ready yet
     }
   }, [selectedFeatureId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    if (!selectedFeature || focusSelectedNonce === 0) return;
+
+    map.easeTo({
+      center: getFeatureCenter(selectedFeature),
+      zoom: Math.max(map.getZoom(), 16.8),
+      duration: 900,
+      essential: true,
+    });
+  }, [selectedFeature, focusSelectedNonce]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedFeature || !detailLoadState.visible || is3DActive) {
+      setSelectionPopoverPos(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const point = map.project(getFeatureCenter(selectedFeature));
+      setSelectionPopoverPos({ x: point.x, y: point.y });
+    };
+
+    updatePosition();
+    map.on("move", updatePosition);
+    map.on("zoom", updatePosition);
+    map.on("rotate", updatePosition);
+
+    return () => {
+      map.off("move", updatePosition);
+      map.off("zoom", updatePosition);
+      map.off("rotate", updatePosition);
+    };
+  }, [detailLoadState.visible, is3DActive, selectedFeature]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !aiSearchState.loading) {
+      setScanPopovers([]);
+      return;
+    }
+
+    const labels = [
+      "Lumen verzamelt info",
+      "Scannen",
+      "Indexeren",
+      "Zoeken",
+      "Rangschikken",
+    ] as const;
+    const phases = [
+      "kaart",
+      "BAG",
+      "semantiek",
+      "score",
+      "context",
+    ] as const;
+
+    const buildScanPopovers = () => {
+      const bounds = map.getBounds();
+      const next = Array.from({ length: 11 }).map((_, index) => {
+        const label = labels[index % labels.length] ?? "Scannen";
+        const phase = phases[index % phases.length] ?? "kaart";
+        const xFactor = 0.06 + Math.random() * 0.88;
+        const yFactor =
+          index < 4
+            ? 0.04 + Math.random() * 0.2
+            : 0.08 + Math.random() * 0.82;
+        const lng =
+          bounds.getWest() + (bounds.getEast() - bounds.getWest()) * xFactor;
+        const lat =
+          bounds.getSouth() + (bounds.getNorth() - bounds.getSouth()) * yFactor;
+        return {
+          id: `scan-${index}-${Date.now()}`,
+          lngLat: [lng, lat] as [number, number],
+          label,
+          phase,
+          compact: index > 2,
+        };
+      });
+      setScanPopovers(next);
+    };
+
+    buildScanPopovers();
+    const interval = window.setInterval(buildScanPopovers, 520);
+    return () => window.clearInterval(interval);
+  }, [aiSearchState.loading]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoading) {
+      setCityLoadDots([]);
+      return;
+    }
+
+    const buildCityDots = () => {
+      const bounds = map.getBounds();
+      const next = Array.from({ length: 18 }).map((_, index) => ({
+        id: `city-load-${index}-${Date.now()}`,
+        lngLat: [
+          bounds.getWest() + (bounds.getEast() - bounds.getWest()) * (0.04 + Math.random() * 0.92),
+          bounds.getSouth() + (bounds.getNorth() - bounds.getSouth()) * (0.04 + Math.random() * 0.92),
+        ] as [number, number],
+      }));
+      setCityLoadDots(next);
+    };
+
+    buildCityDots();
+    const interval = window.setInterval(buildCityDots, 380);
+    return () => window.clearInterval(interval);
+  }, [isLoading]);
 
   const handleContainerClick = useCallback(() => {
     popupRef.current?.remove();
@@ -601,6 +874,38 @@ export function MapCanvas({
     [selectedFeature],
   );
 
+  const handleRotateLeft = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    rotateMap(map, 25);
+    is3DModeRef.current = true;
+    setIs3DActive(true);
+  }, []);
+
+  const handleRotateRight = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    rotateMap(map, -25);
+    is3DModeRef.current = true;
+    setIs3DActive(true);
+  }, []);
+
+  const handleReset3D = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !selectedFeature) return;
+
+    map.easeTo({
+      center: getFeatureCenter(selectedFeature),
+      zoom: Math.max(map.getZoom(), 17.2),
+      pitch: 62,
+      bearing: 0,
+      duration: 700,
+      essential: true,
+    });
+    is3DModeRef.current = true;
+    setIs3DActive(true);
+  }, [selectedFeature]);
+
   return (
     <div
       ref={containerRef}
@@ -611,7 +916,112 @@ export function MapCanvas({
       role="application"
       aria-label="Leegstandskaart"
       tabIndex={0}
-    />
+    >
+      {selectionPopoverPos && selectedFeature && detailLoadState.visible ? (
+        <div
+          className={styles.selectionPopover}
+          style={{
+            left: selectionPopoverPos.x,
+            top: selectionPopoverPos.y,
+          }}
+        >
+          <div className={styles.selectionPopoverCard}>
+            <div className={styles.selectionPopoverHeader}>
+              <span className={styles.selectionPopoverIcon} aria-hidden>
+                {detailLoadState.tier === "hoog"
+                  ? "▲"
+                  : detailLoadState.tier === "middel"
+                    ? "◆"
+                    : "●"}
+              </span>
+              <span className={styles.selectionPopoverTier}>
+                {detailLoadState.tier === "hoog"
+                  ? "HOOG POTENTIEEL"
+                  : detailLoadState.tier === "middel"
+                    ? "MIDDEL POTENTIEEL"
+                    : "POTENTIEEL SCAN"}
+              </span>
+            </div>
+            <p className={styles.selectionPopoverLead}>
+              Lumen verzamelt informatie
+            </p>
+            <p className={styles.selectionPopoverStatus}>
+              {detailLoadState.status || "Pulling data"}
+            </p>
+            <div className={styles.selectionPopoverSteps} aria-hidden>
+              {Array.from({ length: detailLoadState.total }).map((_, index) => (
+                <span
+                  key={index}
+                  className={`${styles.selectionPopoverStep} ${
+                    index < detailLoadState.step
+                      ? styles.selectionPopoverStepActive
+                      : ""
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          <span className={styles.selectionPopoverPin} />
+        </div>
+      ) : null}
+
+      {scanPopovers.map((popover) => {
+        const point = mapRef.current?.project(popover.lngLat);
+        if (!point) return null;
+        return (
+          <div
+            key={popover.id}
+            className={`${styles.scanPopover} ${
+              popover.compact ? styles.scanPopoverCompact : ""
+            }`}
+            style={{ left: point.x, top: point.y }}
+          >
+            <span className={styles.scanPopoverDot} />
+            <span className={styles.scanPopoverLabel}>
+              {popover.label} · {popover.phase}
+            </span>
+          </div>
+        );
+      })}
+
+      {cityLoadDots.map((dot) => {
+        const point = mapRef.current?.project(dot.lngLat);
+        if (!point) return null;
+        return (
+          <span
+            key={dot.id}
+            className={styles.cityLoadDot}
+            style={{ left: point.x, top: point.y }}
+          />
+        );
+      })}
+
+      {selectedFeature && is3DActive ? (
+        <div className={styles.mapControls}>
+          <button
+            type="button"
+            className={styles.mapControlButton}
+            onClick={handleRotateLeft}
+          >
+            Draai links
+          </button>
+          <button
+            type="button"
+            className={styles.mapControlButton}
+            onClick={handleReset3D}
+          >
+            Reset
+          </button>
+          <button
+            type="button"
+            className={styles.mapControlButton}
+            onClick={handleRotateRight}
+          >
+            Draai rechts
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -664,6 +1074,59 @@ function rotateMap(map: maplibregl.Map, delta: number) {
     duration: 350,
     essential: true,
   });
+}
+
+function aiResultPropsToFeature(
+  geometry: GeoJSON.Geometry,
+  props: Record<string, unknown>,
+): VboFeature {
+  return {
+    type: "Feature",
+    geometry,
+    properties: {
+      identificatie: String(props["identificatie"] ?? ""),
+      status: String(props["status"] ?? ""),
+      pandStatus: String(props["pandStatus"] ?? ""),
+      pandIdentificatie: String(props["pandIdentificatie"] ?? ""),
+      openbareruimtenaam: String(props["openbareruimtenaam"] ?? ""),
+      huisnummer: String(props["huisnummer"] ?? ""),
+      huisletter: String(props["huisletter"] ?? ""),
+      huisnummertoevoeging: String(props["huisnummertoevoeging"] ?? ""),
+      postcode: String(props["postcode"] ?? ""),
+      gebruiksdoel: String(props["gebruiksdoel"] ?? ""),
+      oppervlakte: Number(props["oppervlakte"] ?? 0),
+      bouwjaar: Number(props["bouwjaar"] ?? 0),
+      woonplaatsnaam: String(props["woonplaatsnaam"] ?? ""),
+    },
+  };
+}
+
+function buildOutlineFilter({
+  selectedFeatureId,
+  showHoog,
+  showMiddel,
+}: {
+  selectedFeatureId: string | null;
+  showHoog: boolean;
+  showMiddel: boolean;
+}): FilterSpecification {
+  const filters: unknown[] = [];
+
+  if (showHoog) {
+    filters.push(["==", ["get", "score_tier"], "hoog"]);
+  }
+  if (showMiddel) {
+    filters.push(["==", ["get", "score_tier"], "middel"]);
+  }
+  if (selectedFeatureId) {
+    filters.push(["==", ["get", "identificatie"], selectedFeatureId]);
+  }
+
+  if (filters.length === 0) {
+    return ["==", ["get", "identificatie"], "__none__"] as FilterSpecification;
+  }
+
+  return ["any", ...filters] as FilterSpecification;
 }
 
 function getFeatureCenter(feature: VboFeature): [number, number] {
@@ -774,9 +1237,14 @@ function buildDarkStyle(): maplibregl.StyleSpecification {
   };
 }
 
-function applyBasemapMode(map: maplibregl.Map, basemap: BasemapMode) {
+function applyBasemapMode(
+  map: maplibregl.Map,
+  basemap: BasemapMode,
+  forceDark = false,
+) {
   const visible = "visible" as const;
   const none = "none" as const;
+  const darkBrt = forceDark && basemap === "brt";
 
   map.setLayoutProperty(
     LAYER_BRT,
@@ -786,17 +1254,27 @@ function applyBasemapMode(map: maplibregl.Map, basemap: BasemapMode) {
   map.setPaintProperty(
     LAYER_BRT,
     "raster-opacity",
-    basemap === "hybrid" ? 0.68 : 0.18,
+    basemap === "hybrid" ? 0.54 : darkBrt ? 0.24 : 0.28,
   );
   map.setPaintProperty(
     LAYER_BRT,
     "raster-brightness-max",
-    basemap === "hybrid" ? 0.9 : 0.3,
+    basemap === "hybrid" ? 0.66 : darkBrt ? 0.34 : 0.34,
+  );
+  map.setPaintProperty(
+    LAYER_BRT,
+    "raster-brightness-min",
+    basemap === "hybrid" ? 0.04 : darkBrt ? 0.02 : 0.02,
   );
   map.setPaintProperty(
     LAYER_BRT,
     "raster-saturation",
     basemap === "hybrid" ? -0.2 : -1,
+  );
+  map.setPaintProperty(
+    LAYER_BRT,
+    "raster-contrast",
+    basemap === "hybrid" ? 0.24 : darkBrt ? 0.28 : 0.28,
   );
 
   map.setLayoutProperty(

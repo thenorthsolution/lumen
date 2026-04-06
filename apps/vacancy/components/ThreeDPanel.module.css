@@ -59,6 +59,29 @@
   color: rgba(201, 209, 217, 0.78);
 }
 
+.modeTabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.modeTab {
+  border: 1px solid rgba(139, 148, 158, 0.24);
+  background: rgba(22, 27, 34, 0.72);
+  color: rgba(201, 209, 217, 0.8);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.modeTabActive {
+  color: #f0f6fc;
+  border-color: rgba(88, 166, 255, 0.45);
+  background: rgba(88, 166, 255, 0.14);
+}
+
 .closeButton {
   border: 1px solid rgba(139, 148, 158, 0.28);
   background: rgba(22, 27, 34, 0.85);
@@ -78,6 +101,46 @@
 .viewer {
   position: absolute;
   inset: 0;
+}
+
+.streetWrap {
+  position: relative;
+  min-height: 520px;
+  background: #06080c;
+  display: flex;
+  flex-direction: column;
+}
+
+.streetImage {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  object-fit: cover;
+  background: #06080c;
+}
+
+.streetMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  border-top: 1px solid rgba(139, 148, 158, 0.18);
+  background: rgba(10, 14, 18, 0.88);
+  color: rgba(201, 209, 217, 0.8);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.streetLink {
+  color: #8fc6ff;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.streetLink:hover {
+  text-decoration: underline;
 }
 
 .overlayMessage {
@@ -117,12 +180,17 @@
   }
 
   .header,
-  .footer {
+  .footer,
+  .streetMeta {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .viewerWrap {
+    min-height: 360px;
+  }
+
+  .streetWrap {
     min-height: 360px;
   }
 }

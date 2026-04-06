@@ -36,6 +36,20 @@ export type BagPandStatus =
 export const ALL_VBO_STATUSES: BagVboStatus[] = Object.values(BAG_VBO_STATUS);
 export const ALL_PAND_STATUSES: BagPandStatus[] = Object.values(BAG_PAND_STATUS);
 
+export const DEFAULT_SHORTLIST_VBO_STATUSES: BagVboStatus[] =
+  ALL_VBO_STATUSES.filter(
+    (status) =>
+      status !== BAG_VBO_STATUS.IN_GEBRUIK &&
+      status !== BAG_VBO_STATUS.IN_GEBRUIK_NIET_INGEMETEN,
+  );
+
+export const DEFAULT_SHORTLIST_PAND_STATUSES: BagPandStatus[] =
+  ALL_PAND_STATUSES.filter(
+    (status) =>
+      status !== BAG_PAND_STATUS.IN_GEBRUIK &&
+      status !== BAG_PAND_STATUS.IN_GEBRUIK_NIET_INGEMETEN,
+  );
+
 /**
  * Status values that indicate potential vacancy or underuse.
  * Used as the primary filter in leegstandsradar.

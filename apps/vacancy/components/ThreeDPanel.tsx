@@ -29,8 +29,25 @@ interface ThreeDPanelProps {
 export function ThreeDPanel({ feature, onClose }: ThreeDPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
+  const [activeMode, setActiveMode] = useState<"model" | "street">("model");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [streetState, setStreetState] = useState<{
+    isLoading: boolean;
+    error: string;
+    configured: boolean;
+    image: {
+      id: string;
+      imageUrl: string | null;
+      viewerUrl: string;
+      capturedAt: string | null;
+    } | null;
+  }>({
+    isLoading: true,
+    error: "",
+    configured: true,
+    image: null,
+  });
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -120,6 +137,57 @@ export function ThreeDPanel({ feature, onClose }: ThreeDPanelProps) {
     focusFeature(viewer, Cesium, feature);
   }, [feature, state]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const [lng, lat] = getFeatureCenter(feature);
+    const url = new URL("/api/streetview", window.location.origin);
+    url.searchParams.set("lng", String(lng));
+    url.searchParams.set("lat", String(lat));
+
+    setStreetState({
+      isLoading: true,
+      error: "",
+      configured: true,
+      image: null,
+    });
+
+    fetch(url.toString(), { signal: controller.signal })
+      .then(async (response) => {
+        const data = (await response.json()) as {
+          configured?: boolean;
+          error?: string;
+          image?: {
+            id: string;
+            imageUrl: string | null;
+            viewerUrl: string;
+            capturedAt: string | null;
+          } | null;
+        };
+
+        if (!response.ok) {
+          throw new Error(data.error || "Straatbeeld kon niet worden geladen.");
+        }
+
+        setStreetState({
+          isLoading: false,
+          error: data.error ?? "",
+          configured: data.configured !== false,
+          image: data.image ?? null,
+        });
+      })
+      .catch((error) => {
+        if ((error as Error).name === "AbortError") return;
+        setStreetState({
+          isLoading: false,
+          error: (error as Error).message,
+          configured: false,
+          image: null,
+        });
+      });
+
+    return () => controller.abort();
+  }, [feature]);
+
   return (
     <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.panel}>
@@ -135,6 +203,26 @@ export function ThreeDPanel({ feature, onClose }: ThreeDPanelProps) {
               gebouwvormen, maar geen fototexturen.
             </p>
           </div>
+          <div className={styles.modeTabs}>
+            <button
+              type="button"
+              onClick={() => setActiveMode("model")}
+              className={`${styles.modeTab} ${
+                activeMode === "model" ? styles.modeTabActive : ""
+              }`}
+            >
+              3D model
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMode("street")}
+              className={`${styles.modeTab} ${
+                activeMode === "street" ? styles.modeTabActive : ""
+              }`}
+            >
+              Straatbeeld
+            </button>
+          </div>
           <button
             type="button"
             className={styles.closeButton}
@@ -145,25 +233,69 @@ export function ThreeDPanel({ feature, onClose }: ThreeDPanelProps) {
           </button>
         </div>
 
-        <div className={styles.viewerWrap}>
-          <div ref={containerRef} className={styles.viewer} />
-          {state === "loading" && (
-            <div className={styles.overlayMessage}>
-              3D gebouwen laden...
-            </div>
-          )}
-          {state === "error" && (
-            <div className={styles.overlayMessage}>
-              <strong>3D viewer kon niet laden.</strong>
-              <span>{errorMessage}</span>
-            </div>
-          )}
-        </div>
+        {activeMode === "model" ? (
+          <div className={styles.viewerWrap}>
+            <div ref={containerRef} className={styles.viewer} />
+            {state === "loading" && (
+              <div className={styles.overlayMessage}>
+                3D gebouwen laden...
+              </div>
+            )}
+            {state === "error" && (
+              <div className={styles.overlayMessage}>
+                <strong>3D viewer kon niet laden.</strong>
+                <span>{errorMessage}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={styles.streetWrap}>
+            {streetState.isLoading ? (
+              <div className={styles.overlayMessage}>Straatbeeld laden...</div>
+            ) : !streetState.configured ? (
+              <div className={styles.overlayMessage}>
+                <strong>Straatbeeld niet geconfigureerd.</strong>
+                <span>{streetState.error}</span>
+              </div>
+            ) : !streetState.image?.imageUrl ? (
+              <div className={styles.overlayMessage}>
+                <strong>Geen straatbeeld gevonden.</strong>
+                <span>
+                  Er is geen nabij Mapillary-beeld beschikbaar voor deze
+                  locatie.
+                </span>
+              </div>
+            ) : (
+              <>
+                <img
+                  src={streetState.image.imageUrl}
+                  alt="Straatbeeld van de geselecteerde locatie"
+                  className={styles.streetImage}
+                />
+                <div className={styles.streetMeta}>
+                  <span>
+                    Vast straatbeeld dichtbij het object. Dit beeld navigeert
+                    niet mee, zodat je de gevel rustig kunt beoordelen.
+                  </span>
+                  <a
+                    href={streetState.image.viewerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.streetLink}
+                  >
+                    Open in Mapillary
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <div className={styles.footer}>
           <span>
-            Navigatie: linkermuisknop om te draaien, rechtermuisknop om te
-            pannen, scroll om te zoomen.
+            {activeMode === "model"
+              ? "Navigatie: linkermuisknop om te draaien, rechtermuisknop om te pannen, scroll om te zoomen."
+              : "Straatbeeld blijft vast op de dichtstbijzijnde opname, zodat de voorgevel leesbaar blijft."}
           </span>
           {feature.properties.pandIdentificatie && (
             <span>Pand: {feature.properties.pandIdentificatie}</span>

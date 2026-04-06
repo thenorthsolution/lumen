@@ -9,7 +9,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "db:setup:nls": "psql \"$(sed -n 's/^DATABASE_URL=//p' .env | head -n 1)\" -f ../../services/nls/sql/001_pgvector_bag_search.sql",
+    "db:check:nls": "cd ../.. && DATABASE_URL=\"$(sed -n 's/^DATABASE_URL=//p' apps/vacancy/.env | head -n 1)\" PYTHONPATH=. python3 -m services.nls.check_db",
+    "db:stats:nls": "cd ../.. && DATABASE_URL=\"$(sed -n 's/^DATABASE_URL=//p' apps/vacancy/.env | head -n 1)\" PYTHONPATH=. python3 -m services.nls.stats_db",
+    "nls:index": "sh ./scripts/nls-index.sh"
   },
   "dependencies": {
     "@lumen/pdok-client": "workspace:*",
