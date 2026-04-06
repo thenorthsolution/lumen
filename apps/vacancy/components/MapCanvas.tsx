@@ -118,6 +118,42 @@ export function MapCanvas({
     Array<{ id: string; lngLat: [number, number] }>
   >([]);
 
+  const exitThreeDMode = useCallback(
+    (map: maplibregl.Map, duration = 950) => {
+      if (!map.isStyleLoaded()) return;
+      if (
+        !is3DModeRef.current &&
+        map.getPitch() <= 0.1 &&
+        Math.abs(map.getBearing()) <= 0.1
+      ) {
+        return;
+      }
+
+      const restoreView = last2DViewRef.current;
+
+      try {
+        map.stop();
+        is3DModeRef.current = false;
+        setIs3DActive(false);
+        map.setLayoutProperty(LAYER_PERCELEN_3D, "visibility", "none");
+        applyBasemapMode(map, userBasemapRef.current, false);
+        map.easeTo({
+          ...(restoreView ? { center: restoreView.center } : {}),
+          zoom: restoreView
+            ? Math.max(restoreView.zoom - 0.4, 14)
+            : Math.max(map.getZoom() - 1.2, 14),
+          pitch: 0,
+          bearing: 0,
+          duration,
+          essential: true,
+        });
+      } catch {
+        // Map may not be fully ready yet.
+      }
+    },
+    [],
+  );
+
   // Initialise map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -363,6 +399,12 @@ export function MapCanvas({
 
       // Click on empty space deselects
       map.on("click", (e) => {
+        if (is3DModeRef.current) {
+          exitThreeDMode(map, 820);
+          onFeatureSelect(null);
+          return;
+        }
+
         const features = map.queryRenderedFeatures(e.point, {
           layers: clickableLayers,
         });
@@ -379,7 +421,7 @@ export function MapCanvas({
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [exitThreeDMode, onFeatureSelect]);
 
   // Keep building footprints aligned with the current viewport.
   // The gemeente selector only changes focus; panning/zooming updates context.
@@ -547,26 +589,8 @@ export function MapCanvas({
     if (!map || !map.isStyleLoaded()) return;
     if (selectedFeature) return;
 
-    try {
-      is3DModeRef.current = false;
-      setIs3DActive(false);
-      map.setLayoutProperty(LAYER_PERCELEN_3D, "visibility", "none");
-      applyBasemapMode(map, userBasemapRef.current, false);
-      const restoreView = last2DViewRef.current;
-      map.easeTo({
-        ...(restoreView ? { center: restoreView.center } : {}),
-        zoom: restoreView
-          ? Math.max(restoreView.zoom - 0.4, 14)
-          : Math.max(map.getZoom() - 1.2, 14),
-        pitch: 0,
-        bearing: 0,
-        duration: 950,
-        essential: true,
-      });
-    } catch {
-      // Layer may not be ready yet.
-    }
-  }, [selectedFeature]);
+    exitThreeDMode(map);
+  }, [exitThreeDMode, selectedFeature]);
 
   useEffect(() => {
     const map = mapRef.current;
