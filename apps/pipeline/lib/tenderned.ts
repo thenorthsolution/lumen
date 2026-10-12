@@ -146,7 +146,7 @@ async function fetchTenderNed(
   }
 }
 
-// ─── Mock data generator ─────────────────────────────────────────────────
+// ─── Development fixtures ────────────────────────────────────────────────
 
 const AUTHORITIES = [
   "Gemeente Deventer",
@@ -252,6 +252,7 @@ export async function fetchTenders(
     return { tenders: live, isMock: false };
   }
 
-  console.info("[tenderned] Using mock data (live API unavailable or empty)");
-  return { tenders: generateMockTenders(months), isMock: true };
+  // Production must fail closed: generated fixtures may be used in isolated
+  // tests and stories, but can never appear as live procurement information.
+  return { tenders: [], isMock: false };
 }

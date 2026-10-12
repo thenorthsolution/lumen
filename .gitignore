@@ -79,3 +79,6 @@ ENV/
 .nyc_output
 playwright-report/
 test-results/
+# Local dependency and browser caches
+.corepack-cache/
+.playwright-cli/

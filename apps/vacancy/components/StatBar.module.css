@@ -63,3 +63,28 @@
   text-transform: uppercase;
   line-height: 1;
 }
+
+@media (max-width: 760px) {
+  .bar {
+    overflow-x: auto;
+    padding: 0 10px;
+    scrollbar-width: none;
+  }
+
+  .bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .item {
+    flex: 0 0 auto;
+    padding: 0 12px;
+  }
+
+  .spacer {
+    flex: 0 0 8px;
+  }
+
+  .meta {
+    flex: 0 0 auto;
+  }
+}

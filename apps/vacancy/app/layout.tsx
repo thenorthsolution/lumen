@@ -2,22 +2,27 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Leegstandsradar — Noord-Holland vacaturekaart",
+  title: "Lumen — Municipality Intelligence Dashboard",
   description:
-    "Kaart van leegstaande en onderbenutte gebouwen in Nederland met haalbaarheidsfilter voor woningconversie. Gratis en open — geen account vereist.",
+    "Publiek-belang dashboard voor gemeenten: leegstand, ruimte en pijplijnsignalen met bron, confidence en methodologische grenzen.",
   keywords: [
+    "Lumen",
+    "gemeente dashboard",
     "leegstand",
+    "ruimte",
+    "bouwpijplijn",
     "woningconversie",
     "BAG",
     "PDOK",
-    "kantoorleegtand",
+    "TenderNed",
     "Netherlands housing",
   ],
   openGraph: {
-    title: "Leegstandsradar",
-    description: "Leegstaande gebouwen zichtbaar maken voor woningconversie",
+    title: "Lumen",
+    description:
+      "Publieke woningmarktintelligentie voor verborgen capaciteit en delivery blockers.",
     url: "https://leegstandsradar.nl",
-    siteName: "Leegstandsradar",
+    siteName: "Lumen",
     locale: "nl_NL",
   },
 };

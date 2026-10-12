@@ -1,34 +1,39 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { searchGemeenten, type Gemeente } from "@lumen/pdok-client";
-import type { AiSearchHit } from "./AppShell";
-import {
-  fetchEligibleCountForGemeente,
-  SHORTLIST_COUNT_FILTERS,
-} from "@/lib/bag-fetch";
+import { SHORTLIST_COUNT_FILTERS } from "@/lib/bag-fetch";
 import ELIGIBLE_COUNTS from "@/data/eligible-counts.generated.json";
 import styles from "./TopBar.module.css";
 
 interface TopBarProps {
   gemeente: Gemeente;
   onGemeenteChange: (code: string) => void;
-  onAiSearchSelect: (hit: AiSearchHit) => void;
-  onAiSearchResults: (hits: AiSearchHit[]) => void;
-  onAiSearchStateChange: (state: { loading: boolean; query: string }) => void;
   isLoading: boolean;
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
 }
 
-export type NavTab = "kaart" | "tabel" | "methodologie";
+export type NavTab =
+  | "overzicht"
+  | "leegstand"
+  | "ruimte"
+  | "pijplijn"
+  | "tabel"
+  | "methodologie";
+
+const NAV_ITEMS: Array<{ value: NavTab; label: string }> = [
+  { value: "overzicht", label: "overzicht" },
+  { value: "leegstand", label: "leegstand" },
+  { value: "ruimte", label: "ruimte" },
+  { value: "pijplijn", label: "pijplijn" },
+  { value: "tabel", label: "objecten" },
+  { value: "methodologie", label: "trust" },
+];
 
 export function TopBar({
   gemeente,
   onGemeenteChange,
-  onAiSearchSelect,
-  onAiSearchResults,
-  onAiSearchStateChange,
   isLoading,
   activeTab,
   onTabChange,
@@ -36,37 +41,21 @@ export function TopBar({
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Gemeente[]>([]);
-  const [liveCounts, setLiveCounts] = useState<Record<string, number>>({});
-  const [aiQuery, setAiQuery] = useState("");
-  const [aiResults, setAiResults] = useState<AiSearchHit[]>([]);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
-  const [aiHasSearched, setAiHasSearched] = useState(false);
-  const aiWrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const visibleMissingResults = useMemo(
-    () =>
-      results.filter(
-        (g) =>
-          getStoredEligibleCount(g.code) === null && liveCounts[g.code] === undefined,
-      ),
-    [results, liveCounts],
-  );
 
   useEffect(() => {
     if (searchOpen) {
       inputRef.current?.focus();
-      setResults(filterGemeentenWithPotential(sortGemeenten(searchGemeenten("")), liveCounts).slice(0, 12));
+      setResults(filterGemeentenWithPotential(sortGemeenten(searchGemeenten(""))).slice(0, 12));
     }
-  }, [searchOpen, liveCounts]);
+  }, [searchOpen]);
 
   useEffect(() => {
     setResults(
-      filterGemeentenWithPotential(sortGemeenten(searchGemeenten(query)), liveCounts).slice(0, 12),
+      filterGemeentenWithPotential(sortGemeenten(searchGemeenten(query))).slice(0, 12),
     );
-  }, [query, liveCounts]);
+  }, [query]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -77,47 +66,10 @@ export function TopBar({
         setSearchOpen(false);
         setQuery("");
       }
-      if (aiWrapRef.current && !aiWrapRef.current.contains(e.target as Node)) {
-        setAiOpen(false);
-      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    if (!searchOpen || visibleMissingResults.length === 0) return;
-
-    const controller = new AbortController();
-
-    Promise.all(
-      visibleMissingResults.map(async (g) => {
-        const count = await fetchEligibleCountForGemeente(g, controller.signal);
-        return [g.code, count] as const;
-      }),
-    )
-      .then((pairs) => {
-        if (controller.signal.aborted || pairs.length === 0) return;
-        setLiveCounts((prev) => {
-          const next = { ...prev };
-          let changed = false;
-          for (const [code, count] of pairs) {
-            if (next[code] !== count) {
-              next[code] = count;
-              changed = true;
-            }
-          }
-          return changed ? next : prev;
-        });
-      })
-      .catch((err) => {
-        if ((err as Error).name !== "AbortError") {
-          console.error("Eligible count fetch fout:", err);
-        }
-      });
-
-    return () => controller.abort();
-  }, [searchOpen, visibleMissingResults]);
 
   function handleSelect(code: string) {
     onGemeenteChange(code);
@@ -125,69 +77,24 @@ export function TopBar({
     setQuery("");
   }
 
-  async function handleAiSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    const trimmed = aiQuery.trim();
-    if (!trimmed) return;
-
-    setAiLoading(true);
-    setAiError("");
-    setAiOpen(true);
-    setAiHasSearched(true);
-    onAiSearchStateChange({ loading: true, query: trimmed });
-
-    try {
-      const url = new URL("/api/ai-search", window.location.origin);
-      url.searchParams.set("q", trimmed);
-      url.searchParams.set("limit", "8");
-
-      const response = await fetch(url.toString());
-      const data = (await response.json()) as {
-        error?: string;
-        results?: AiSearchHit[];
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error || "AI search mislukt.");
-      }
-
-      const hits = data.results ?? [];
-      setAiResults(hits);
-      onAiSearchResults(hits);
-    } catch (error) {
-      setAiResults([]);
-      onAiSearchResults([]);
-      setAiError((error as Error).message);
-    } finally {
-      setAiLoading(false);
-      onAiSearchStateChange({ loading: false, query: trimmed });
-    }
-  }
-
-  function handleAiResultClick(hit: AiSearchHit) {
-    onAiSearchSelect(hit);
-    setAiOpen(false);
-    setAiQuery("");
-  }
-
   return (
     <header className={styles.topbar}>
       {/* Logo */}
       <div className={styles.logo}>
-        <span className={styles.logoNorth}>NORTH</span>
+        <span className={styles.logoNorth}>LUMEN</span>
         <span className={styles.logoDivider}>/</span>
-        <span className={styles.logoTool}>LEEGSTANDSRADAR</span>
+        <span className={styles.logoTool}>MUNICIPALITY INTELLIGENCE</span>
       </div>
 
       {/* Nav */}
       <nav className={styles.nav}>
-        {(["kaart", "tabel", "methodologie"] as NavTab[]).map((tab) => (
+        {NAV_ITEMS.map((item) => (
           <button
-            key={tab}
-            className={`${styles.navItem} ${activeTab === tab ? styles.navItemActive : ""}`}
-            onClick={() => onTabChange(tab)}
+            key={item.value}
+            className={`${styles.navItem} ${activeTab === item.value ? styles.navItemActive : ""}`}
+            onClick={() => onTabChange(item.value)}
           >
-            {tab}
+            {item.label}
           </button>
         ))}
       </nav>
@@ -201,67 +108,6 @@ export function TopBar({
           <span className={styles.loadingText}>laden...</span>
         </div>
       )}
-
-      <div className={styles.aiWrap} ref={aiWrapRef}>
-        <form className={styles.aiForm} onSubmit={handleAiSubmit}>
-          <input
-            type="text"
-            className={styles.aiInput}
-            placeholder="AI zoekvraag, bv. groot nieuw pand dat gesloopt gaat worden"
-            value={aiQuery}
-            onChange={(event) => setAiQuery(event.target.value)}
-            onFocus={() => {
-              if (aiHasSearched || aiResults.length > 0 || aiError) {
-                setAiOpen(true);
-              }
-            }}
-            aria-label="AI zoekvraag"
-          />
-          <button type="submit" className={styles.aiButton}>
-            AI zoek
-          </button>
-        </form>
-
-        {aiOpen && (aiLoading || aiError || aiHasSearched) && (
-          <div className={styles.aiDropdown}>
-            {aiLoading ? (
-              <div className={styles.aiState}>AI zoekresultaten laden...</div>
-            ) : aiError ? (
-              <div className={styles.aiState}>{aiError}</div>
-            ) : (
-              <ul className={styles.aiList}>
-                {aiResults.map((hit) => (
-                  <li key={hit.id}>
-                    <button
-                      type="button"
-                      className={styles.aiResult}
-                      onClick={() => handleAiResultClick(hit)}
-                    >
-                      <span className={styles.aiResultMain}>
-                        <span className={styles.aiResultTitle}>
-                          {hit.gebruiksdoel || "Object"} · {hit.woonplaatsnaam}
-                        </span>
-                        <span className={styles.aiResultSub}>
-                          {hit.status || "status onbekend"} ·{" "}
-                          {hit.oppervlakte
-                            ? `${Math.round(hit.oppervlakte).toLocaleString("nl-NL")} m²`
-                            : "opp. onbekend"}
-                        </span>
-                      </span>
-                      <span className={styles.aiResultMeta}>
-                        {Math.round(hit.hybrid_score * 100)}%
-                      </span>
-                    </button>
-                  </li>
-                ))}
-                {aiResults.length === 0 && (
-                  <li className={styles.aiState}>Geen AI matches gevonden.</li>
-                )}
-              </ul>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* Gemeente selector */}
       <div className={styles.gemeenteWrap} ref={dropdownRef}>
@@ -342,7 +188,7 @@ export function TopBar({
                       <span className={styles.resultProvince}>{g.province}</span>
                     </span>
                     <span className={styles.resultMeta}>
-                      {formatEligibleCount(g.code, liveCounts)}
+                      {formatEligibleCount(g.code)}
                     </span>
                   </button>
                 </li>
@@ -387,13 +233,9 @@ export function TopBar({
   );
 }
 
-function formatEligibleCount(
-  code: string,
-  liveCounts: Record<string, number>,
-): string {
+function formatEligibleCount(code: string): string {
   const stored = getStoredEligibleCount(code);
-  const value = stored ?? liveCounts[code];
-  return value === undefined ? "laden..." : `${value.toLocaleString("nl-NL")} cand.`;
+  return stored === null ? "open kaart" : `${stored.toLocaleString("nl-NL")} cand.`;
 }
 
 function sortGemeenten(gemeenten: Gemeente[]): Gemeente[] {
@@ -454,17 +296,13 @@ function getStoredEligibleCount(code: string): number | null {
 
 function getEligibleCount(
   code: string,
-  liveCounts: Record<string, number>,
 ): number | null {
-  return getStoredEligibleCount(code) ?? liveCounts[code] ?? null;
+  return getStoredEligibleCount(code);
 }
 
-function filterGemeentenWithPotential(
-  gemeenten: Gemeente[],
-  liveCounts: Record<string, number>,
-): Gemeente[] {
+function filterGemeentenWithPotential(gemeenten: Gemeente[]): Gemeente[] {
   return gemeenten.filter((gemeente) => {
-    const count = getEligibleCount(gemeente.code, liveCounts);
+    const count = getEligibleCount(gemeente.code);
     return count === null || count > 0;
   });
 }

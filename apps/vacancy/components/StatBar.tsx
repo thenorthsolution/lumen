@@ -2,7 +2,6 @@
 
 import type { VboFeatureCollection } from "./AppShell";
 import type { Gemeente } from "@lumen/pdok-client";
-import { countByTier } from "@lumen/bag-utils";
 import { estimateWoningen } from "@/lib/bag-fetch";
 import styles from "./StatBar.module.css";
 
@@ -13,21 +12,17 @@ interface StatBarProps {
 
 export function StatBar({ featureCollection, gemeente }: StatBarProps) {
   const features = featureCollection?.features ?? [];
-  const scores = features
-    .map((f) => f.properties?.score)
-    .filter(Boolean) as Parameters<typeof countByTier>[0];
-  const counts = countByTier(scores);
-
-  const totalOppervlakte = features.reduce(
-    (sum, f) => sum + (f.properties?.oppervlakte ?? 0),
-    0,
+  const candidateFeatures = features.filter(
+    (feature) => feature.properties?.mapCategory === "candidate",
+  );
+  const statusFeatures = features.filter(
+    (feature) => feature.properties?.mapCategory === "status",
   );
 
-  const hoogOppervlakte = features
-    .filter((f) => f.properties?.score?.tier === "hoog")
+  const candidateOppervlakte = candidateFeatures
     .reduce((sum, f) => sum + (f.properties?.oppervlakte ?? 0), 0);
 
-  const est = estimateWoningen(hoogOppervlakte);
+  const est = estimateWoningen(candidateOppervlakte);
   const today = new Date().toLocaleDateString("nl-NL", {
     day: "2-digit",
     month: "2-digit",
@@ -37,20 +32,20 @@ export function StatBar({ featureCollection, gemeente }: StatBarProps) {
   return (
     <div className={styles.bar}>
       <StatItem
-        value={counts.hoog.toLocaleString("nl-NL")}
-        label="Hoog potentieel"
+        value={candidateFeatures.length.toLocaleString("nl-NL")}
+        label="Conversiekandidaten"
         color="var(--color-hoog)"
       />
       <div className={styles.divider} />
       <StatItem
-        value={counts.middel.toLocaleString("nl-NL")}
-        label="Middel potentieel"
+        value={statusFeatures.length.toLocaleString("nl-NL")}
+        label="Statussignalen"
         color="var(--color-middel)"
       />
       <div className={styles.divider} />
       <StatItem
-        value={`${Math.round(hoogOppervlakte / 1000).toLocaleString("nl-NL")}k m²`}
-        label="Hoog pot. oppervlak"
+        value={`${Math.round(candidateOppervlakte / 1000).toLocaleString("nl-NL")}k m²`}
+        label="Kandidaat oppervlak"
       />
       <div className={styles.divider} />
       <StatItem

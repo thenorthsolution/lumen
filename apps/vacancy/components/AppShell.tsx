@@ -11,9 +11,10 @@ import { ThreeDPanel } from "./ThreeDPanel";
 import { TableView } from "./TableView";
 import { MethodologyView } from "./MethodologyView";
 import { getDefaultGemeente, getGemeente } from "@lumen/pdok-client";
+import ELIGIBLE_COUNTS from "@/data/eligible-counts.generated.json";
 import {
-  DEFAULT_SHORTLIST_PAND_STATUSES,
-  DEFAULT_SHORTLIST_VBO_STATUSES,
+  ALL_PAND_STATUSES,
+  ALL_VBO_STATUSES,
   type ViabilityScore,
 } from "@lumen/bag-utils";
 import type { FeatureCollection, Feature, Geometry } from "geojson";
@@ -27,7 +28,7 @@ export type LayerVisibility = {
   percelen: boolean;
 };
 
-export type BasemapMode = "brt" | "luchtfoto" | "hybrid";
+export type BasemapMode = "dataviz" | "brt" | "luchtfoto" | "hybrid";
 
 export type FilterState = {
   bouwjaarMin: number;
@@ -40,6 +41,7 @@ export type FilterState = {
 export interface VboFeatureProperties {
   identificatie: string;
   status: string;
+  mapCategory: "candidate" | "status" | "woning" | "other";
   pandStatus?: string;
   pandIdentificatie?: string;
   bagUri?: string;
@@ -64,26 +66,6 @@ export interface PermitNotice {
   url: string;
 }
 
-export interface AiSearchHit {
-  id: string;
-  vbo_identificatie: string;
-  pand_identificatie: string;
-  gemeente_code: string;
-  gemeente_name: string;
-  woonplaatsnaam: string;
-  gebruiksdoel: string;
-  status: string;
-  pand_status: string;
-  score_tier: string;
-  bouwjaar: number;
-  oppervlakte: number;
-  lon: number;
-  lat: number;
-  similarity: number;
-  lexical_rank: number;
-  hybrid_score: number;
-}
-
 export type VboFeature = Feature<Geometry, VboFeatureProperties>;
 export type VboFeatureCollection = FeatureCollection<
   Geometry,
@@ -94,14 +76,11 @@ const DEFAULT_FILTERS: FilterState = {
   bouwjaarMin: 0,
   oppervlakteMin: 0,
   gebruiksdoelen: [
+    "woonfunctie",
     "kantoorfunctie",
-    "winkelfunctie",
-    "bijeenkomstfunctie",
-    "onderwijsfunctie",
-    "industriefunctie",
   ],
-  vboStatuses: [...DEFAULT_SHORTLIST_VBO_STATUSES],
-  pandStatuses: [...DEFAULT_SHORTLIST_PAND_STATUSES],
+  vboStatuses: [...ALL_VBO_STATUSES],
+  pandStatuses: [...ALL_PAND_STATUSES],
 };
 
 const DEFAULT_LAYERS: LayerVisibility = {
@@ -119,24 +98,15 @@ type DetailLoadState = {
   tier: string;
 };
 
-type AiSearchState = {
-  loading: boolean;
-  query: string;
-};
-
 export function AppShell() {
   const [gemeente, setGemeente] = useState(getDefaultGemeente());
-  const [activeTab, setActiveTab] = useState<NavTab>("kaart");
+  const [activeTab, setActiveTab] = useState<NavTab>("leegstand");
   const [layers, setLayers] = useState<LayerVisibility>(DEFAULT_LAYERS);
-  const [basemap, setBasemap] = useState<BasemapMode>("brt");
+  const [basemap, setBasemap] = useState<BasemapMode>("dataviz");
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [view3DNonce, setView3DNonce] = useState(0);
   const [focusSelectedNonce, setFocusSelectedNonce] = useState(0);
   const [isAdvanced3DOpen, setIsAdvanced3DOpen] = useState(false);
-  const [aiSearchResults, setAiSearchResults] = useState<AiSearchHit[]>([]);
-  const [pendingAiSelectionId, setPendingAiSelectionId] = useState<
-    string | null
-  >(null);
   const [rotate3DCommand, setRotate3DCommand] = useState<{
     nonce: number;
     delta: number;
@@ -155,66 +125,25 @@ export function AppShell() {
     status: "",
     tier: "laag",
   });
-  const [aiSearchState, setAiSearchState] = useState<AiSearchState>({
-    loading: false,
-    query: "",
-  });
 
   const handleFeatureSelect = useCallback((feature: VboFeature | null) => {
     setSelectedFeature(feature);
-    if (feature) {
-      setAiSearchResults([]);
-      setAiSearchState((current) => ({ ...current, loading: false }));
-    }
   }, []);
 
   const handleTableFeatureSelect = useCallback((feature: VboFeature) => {
     setSelectedFeature(feature);
-    setActiveTab("kaart");
+    setActiveTab("leegstand");
     setFocusSelectedNonce((n) => n + 1);
     setView3DNonce((n) => n + 1);
   }, []);
-
-  const handleAiSearchSelect = useCallback(
-    (hit: AiSearchHit) => {
-      const targetId = hit.vbo_identificatie || hit.id;
-      setActiveTab("kaart");
-
-      const localFeature =
-        featureCollection?.features.find(
-          (feature) => feature.properties.identificatie === targetId,
-        ) ?? null;
-
-      if (localFeature) {
-        setSelectedFeature(localFeature);
-        setAiSearchResults([]);
-        setFocusSelectedNonce((n) => n + 1);
-        return;
-      }
-
-      setSelectedFeature(aiHitToFeature(hit));
-      setAiSearchResults([]);
-      setFocusSelectedNonce((n) => n + 1);
-
-      if (hit.gemeente_code && hit.gemeente_code !== gemeente.code) {
-        const nextGemeente = getGemeente(hit.gemeente_code);
-        if (nextGemeente) {
-          setGemeente(nextGemeente);
-          setIsLoading(true);
-        }
-      }
-
-      setPendingAiSelectionId(targetId);
-    },
-    [featureCollection, gemeente.code],
-  );
 
   const handleGemeenteChange = useCallback((code: string) => {
     const g = getGemeente(code);
     if (g) {
       setGemeente(g);
       setSelectedFeature(null);
-      setIsLoading(true);
+      setFeatureCollection(null);
+      setIsLoading(false);
     }
   }, []);
 
@@ -222,19 +151,6 @@ export function AppShell() {
     setFeatureCollection(fc);
     setIsLoading(false);
   }, []);
-
-  useEffect(() => {
-    if (!pendingAiSelectionId || !featureCollection) return;
-
-    const matchedFeature = featureCollection.features.find(
-      (feature) => feature.properties.identificatie === pendingAiSelectionId,
-    );
-    if (!matchedFeature) return;
-
-    setSelectedFeature(matchedFeature);
-    setFocusSelectedNonce((n) => n + 1);
-    setPendingAiSelectionId(null);
-  }, [featureCollection, pendingAiSelectionId]);
 
   useEffect(() => {
     if (!selectedFeature) {
@@ -280,16 +196,21 @@ export function AppShell() {
       <TopBar
         gemeente={gemeente}
         onGemeenteChange={handleGemeenteChange}
-        onAiSearchSelect={handleAiSearchSelect}
-        onAiSearchResults={setAiSearchResults}
-        onAiSearchStateChange={setAiSearchState}
         isLoading={isLoading}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 
       <div className={styles.body}>
-        {activeTab === "kaart" ? (
+        {activeTab === "overzicht" ? (
+          <OverviewView
+            gemeente={gemeente}
+            featureCollection={featureCollection}
+            onOpenLeegstand={() => setActiveTab("leegstand")}
+            onOpenRuimte={() => setActiveTab("ruimte")}
+            onOpenPijplijn={() => setActiveTab("pijplijn")}
+          />
+        ) : activeTab === "leegstand" ? (
           <>
             <SidePanel
               basemap={basemap}
@@ -307,13 +228,11 @@ export function AppShell() {
               layers={layers}
               filters={filters}
               isLoading={isLoading}
-              aiSearchResults={aiSearchResults}
               selectedFeature={selectedFeature}
               focusSelectedNonce={focusSelectedNonce}
               view3DNonce={view3DNonce}
               rotate3DCommand={rotate3DCommand}
               detailLoadState={detailLoadState}
-              aiSearchState={aiSearchState}
               onFeatureSelect={handleFeatureSelect}
               onDataLoaded={handleDataLoaded}
               onLoadStart={() => setIsLoading(true)}
@@ -344,6 +263,46 @@ export function AppShell() {
             featureCollection={featureCollection}
             onSelectFeature={handleTableFeatureSelect}
           />
+        ) : activeTab === "ruimte" ? (
+          <ModuleView
+            title="Ruimte"
+            subtitle="Onderbenutte grond, infill-locaties en transformatiezones voor woningbouw."
+            gemeente={gemeente.name}
+            primaryMetric="Publieke kanslaag"
+            primaryValue="BAG + RO"
+            confidence="Middel"
+            source="BAG verblijfsobjecten, Ruimtelijkeplannen.nl en gemeentelijke begrenzing via PDOK."
+            limitations={[
+              "Nog geen juridische bouwclaim of eigendomssignaal.",
+              "Bestemmingsplaninformatie vereist lokale verificatie.",
+              "Woningschattingen blijven indicatief tot stedenbouwkundige toetsing.",
+            ]}
+            actions={[
+              "Bekijk kleine infill-kavels met niet-residentieel gebruik.",
+              "Scheid herbestemming van grotere transformatielocaties.",
+              "Gebruik dit als agenda voor gebiedsgesprekken, niet als acquisitielijst.",
+            ]}
+          />
+        ) : activeTab === "pijplijn" ? (
+          <ModuleView
+            title="Pijplijn"
+            subtitle="Vergunningen, aanbestedingen, tenderactiviteit en uitvoeringsdruk."
+            gemeente={gemeente.name}
+            primaryMetric="Publieke pijplijn"
+            primaryValue="TenderNed"
+            confidence="Laag-middel"
+            source="TenderNed-publicaties, officiële bekendmakingen en heuristieken per regio."
+            limitations={[
+              "TenderNed dekt publieke opdrachten, niet de volledige private markt.",
+              "Publicaties lopen achter op feitelijke start bouw.",
+              "Knelpuntsignalen zijn richtinggevend en vragen gesprek met lokale partijen.",
+            ]}
+            actions={[
+              "Markeer waar kansrijke locaties geen uitvoeringscapaciteit lijken te hebben.",
+              "Koppel vergunningactiviteit aan leegstand en ruimtepotentieel.",
+              "Gebruik het overzicht voor overleg tussen gemeente, corporaties en uitvoerders.",
+            ]}
+          />
         ) : (
           <MethodologyView />
         )}
@@ -354,27 +313,219 @@ export function AppShell() {
   );
 }
 
-function aiHitToFeature(hit: AiSearchHit): VboFeature {
-  return {
-    type: "Feature",
-    geometry: {
-      type: "Point",
-      coordinates: [hit.lon, hit.lat],
-    },
-    properties: {
-      identificatie: hit.vbo_identificatie || hit.id,
-      status: hit.status || "",
-      pandStatus: hit.pand_status || "",
-      pandIdentificatie: hit.pand_identificatie || "",
-      openbareruimtenaam: "",
-      huisnummer: "",
-      huisletter: "",
-      huisnummertoevoeging: "",
-      postcode: "",
-      gebruiksdoel: hit.gebruiksdoel || "",
-      oppervlakte: Number(hit.oppervlakte || 0),
-      bouwjaar: Number(hit.bouwjaar || 0),
-      woonplaatsnaam: hit.woonplaatsnaam || hit.gemeente_name || "",
-    },
-  };
+function OverviewView({
+  gemeente,
+  featureCollection,
+  onOpenLeegstand,
+  onOpenRuimte,
+  onOpenPijplijn,
+}: {
+  gemeente: ReturnType<typeof getDefaultGemeente>;
+  featureCollection: VboFeatureCollection | null;
+  onOpenLeegstand: () => void;
+  onOpenRuimte: () => void;
+  onOpenPijplijn: () => void;
+}) {
+  const features = featureCollection?.features ?? [];
+  const candidateCount = features.filter(
+    (feature) => feature.properties.mapCategory === "candidate",
+  ).length;
+  const statusCount = features.filter(
+    (feature) => feature.properties.mapCategory === "status",
+  ).length;
+  const generatedTotal = getGeneratedEligibleCount(gemeente.code);
+  const total = featureCollection?.features.length ?? generatedTotal;
+
+  return (
+    <main className={styles.overview}>
+      <section className={styles.introPanel}>
+        <div>
+          <p className={styles.kicker}>Lumen municipality intelligence</p>
+          <h1 className={styles.headline}>
+            Verborgen wooncapaciteit voor {gemeente.name} zichtbaar maken.
+          </h1>
+          <p className={styles.lede}>
+            Een publiek-belang dashboard voor gemeenten en semi-publieke
+            woningpartners: leegstand, ruimte en pijplijnsignalen in een
+            gedeelde werkomgeving.
+          </p>
+        </div>
+        <div className={styles.boundaryBox}>
+          <span className={styles.boundaryLabel}>Publieke grens</span>
+          <p>
+            Lumen verkoopt geen publieke woningsignalen achter een betaalmuur en
+            bouwt geen functies voor buyer targeting, druk op bewoners of
+            speculatieve leadgeneratie.
+          </p>
+        </div>
+      </section>
+
+      <section className={styles.metricGrid} aria-label="Gemeente samenvatting">
+        <MetricCard label="Shortlist objecten" value={total ?? "Open kaart"} detail="BAG-proxy, geen bevestigde leegstand" />
+        <MetricCard label="Conversiekandidaten" value={featureCollection ? candidateCount : "Na kaartload"} detail="Niet-woonfuncties met conversiewaarde" />
+        <MetricCard label="Statussignalen" value={featureCollection ? statusCount : "Na kaartload"} detail="Buiten gebruik, sloop of ingetrokken" />
+      </section>
+
+      <section className={styles.moduleGrid} aria-label="Lumen modules">
+        <ModuleCard
+          title="Leegstand"
+          description="Vind ondergebruikte gebouwen die mogelijk kunnen worden geconverteerd."
+          source="BAG + vergunningcontext"
+          confidence="Middel"
+          action="Open kaart"
+          onClick={onOpenLeegstand}
+        />
+        <ModuleCard
+          title="Ruimte"
+          description="Orden onderbenutte land- en sitelocaties op infill, herbestemming en transformatie."
+          source="BAG + RO"
+          confidence="Middel"
+          action="Bekijk module"
+          onClick={onOpenRuimte}
+        />
+        <ModuleCard
+          title="Pijplijn"
+          description="Maak zichtbaar waar publieke bouwactiviteit, vergunningen en capaciteit blokkeren."
+          source="TenderNed + bekendmakingen"
+          confidence="Laag-middel"
+          action="Bekijk module"
+          onClick={onOpenPijplijn}
+        />
+      </section>
+    </main>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: number | string;
+  detail: string;
+}) {
+  const displayValue =
+    typeof value === "number" ? value.toLocaleString("nl-NL") : value;
+
+  return (
+    <article className={styles.metricCard}>
+      <span className={styles.metricLabel}>{label}</span>
+      <strong className={styles.metricValue}>{displayValue}</strong>
+      <span className={styles.metricDetail}>{detail}</span>
+    </article>
+  );
+}
+
+function ModuleCard({
+  title,
+  description,
+  source,
+  confidence,
+  action,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  source: string;
+  confidence: string;
+  action: string;
+  onClick: () => void;
+}) {
+  return (
+    <article className={styles.moduleCard}>
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      <dl className={styles.moduleMeta}>
+        <div>
+          <dt>Bron</dt>
+          <dd>{source}</dd>
+        </div>
+        <div>
+          <dt>Confidence</dt>
+          <dd>{confidence}</dd>
+        </div>
+      </dl>
+      <button className={styles.moduleAction} onClick={onClick}>
+        {action}
+      </button>
+    </article>
+  );
+}
+
+function ModuleView({
+  title,
+  subtitle,
+  gemeente,
+  primaryMetric,
+  primaryValue,
+  confidence,
+  source,
+  limitations,
+  actions,
+}: {
+  title: string;
+  subtitle: string;
+  gemeente: string;
+  primaryMetric: string;
+  primaryValue: string;
+  confidence: string;
+  source: string;
+  limitations: string[];
+  actions: string[];
+}) {
+  return (
+    <main className={styles.moduleView}>
+      <section className={styles.moduleHeader}>
+        <div>
+          <p className={styles.kicker}>Lumen {title.toLowerCase()}</p>
+          <h1>{title} voor {gemeente}</h1>
+          <p>{subtitle}</p>
+        </div>
+        <div className={styles.signalCard}>
+          <span>{primaryMetric}</span>
+          <strong>{primaryValue}</strong>
+          <small>Confidence: {confidence}</small>
+        </div>
+      </section>
+
+      <section className={styles.workGrid}>
+        <article>
+          <h2>Wat deze module moet opleveren</h2>
+          <ul>
+            {actions.map((action) => (
+              <li key={action}>{action}</li>
+            ))}
+          </ul>
+        </article>
+        <article>
+          <h2>Bron en beperkingen</h2>
+          <p>{source}</p>
+          <ul>
+            {limitations.map((limitation) => (
+              <li key={limitation}>{limitation}</li>
+            ))}
+          </ul>
+        </article>
+        <article className={styles.policyPanel}>
+          <h2>Niet-extractieve randvoorwaarde</h2>
+          <p>
+            Deze module mag kansen zichtbaar maken voor publiek handelen, maar
+            niet worden gebruikt als targeting-, acquisitie- of drukmiddel
+            richting kopers, bewoners of kwetsbare groepen.
+          </p>
+        </article>
+      </section>
+    </main>
+  );
+}
+
+function getGeneratedEligibleCount(code: string): number | null {
+  const counts = ELIGIBLE_COUNTS.counts as Record<
+    string,
+    { eligibleCount?: number } | undefined
+  >;
+  return counts[code]?.eligibleCount ?? null;
 }

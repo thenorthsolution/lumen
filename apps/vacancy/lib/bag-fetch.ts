@@ -35,10 +35,9 @@ import type {
 } from "geojson";
 
 const BAG_OGC_BASE = "https://api.pdok.nl/kadaster/bag/ogc/v2";
-const OGC_PAGE_LIMIT = 10000;
+const OGC_PAGE_LIMIT = 1000;
 const OGC_COUNT_PAGE_LIMIT = 1000;
 const WFS_PAGE_LIMIT = 1000;
-const RD_BBOX_PADDING_METERS = 250;
 const BAG_VERBLIJFSOBJECT_WFS_PROPERTIES = [
   "identificatie",
   "rdf_seealso",
@@ -119,12 +118,64 @@ export async function fetchFeatureDetail(
   gemeente: Gemeente,
   identificatie: string,
 ): Promise<Feature<Geometry, VboFeatureProperties> | null> {
-  const base = await getCachedGemeenteBase(gemeente);
-  return (
-    base.features.find(
-      (feature) => feature.properties.identificatie === identificatie,
-    ) ?? null
+  try {
+    const directFeature = await fetchOgcItem("verblijfsobject", identificatie);
+    const scored = mapRawFeatureToScoredFeature(directFeature, new Map());
+    if (scored) return scored;
+  } catch (error) {
+    console.warn(
+      "BAG direct detail fetch failed; using selected index feature fallback",
+      identificatie,
+      error,
+    );
+  }
+
+  return null;
+}
+
+export async function fetchViewportShortlistIndex(
+  bbox: Gemeente["bbox"],
+  filters: FilterState,
+  signal?: AbortSignal,
+  limit = 450,
+): Promise<VboFeatureCollection> {
+  throwIfAborted(signal);
+  const page = await fetchOgcCollection(
+    "verblijfsobject",
+    bbox,
+    signal,
+    Math.min(Math.max(limit, 1), OGC_PAGE_LIMIT),
   );
+  throwIfAborted(signal);
+
+  const indexed = (page.features ?? [])
+    .map((feature) => mapRawFeatureToIndexFeature(feature))
+    .filter(
+      (feature): feature is Feature<Geometry, VboFeatureProperties> =>
+        feature !== null,
+    );
+
+  const hasActiveSignalFilter =
+    filters.bouwjaarMin > 0 ||
+    filters.oppervlakteMin > 0 ||
+    filters.gebruiksdoelen.length > 0 ||
+    filters.vboStatuses.length > 0 ||
+    filters.pandStatuses.length > 0;
+
+  if (!hasActiveSignalFilter) {
+    return {
+      type: "FeatureCollection",
+      features: indexed,
+    };
+  }
+
+  return applyFiltersToScoredCollection({
+    type: "FeatureCollection",
+    features: indexed,
+  }, {
+    ...filters,
+    pandStatuses: [],
+  });
 }
 
 async function fetchGemeenteVerblijfsobjectenWfs(
@@ -213,7 +264,7 @@ async function buildGemeenteBase(
   const startedAt = Date.now();
   let raw: WfsFeatureCollection | OgcFeatureCollection | null = null;
   let pandMetaByKey = new Map<string, PandMeta>();
-  let strategy: "wfs-rd" | "ogc-fallback" = "wfs-rd";
+  let strategy: "wfs" | "ogc-fallback" = "wfs";
 
   try {
     raw = await fetchGemeenteVerblijfsobjectenWfs(gemeente);
@@ -235,17 +286,23 @@ async function buildGemeenteBase(
   }
 
   if (strategy === "ogc-fallback") {
-    const [ogcRaw, nextPandMetaByKey] = await Promise.all([
-      fetchOgcCollectionAllPages(
+    try {
+      raw = await fetchOgcCollectionAllPages(
         "verblijfsobject",
         gemeente.bbox,
         undefined,
         OGC_PAGE_LIMIT,
-      ),
-      fetchPandMetaIndex(gemeente.bbox),
-    ]);
-    raw = ogcRaw;
-    pandMetaByKey = nextPandMetaByKey;
+      );
+    } catch (error) {
+      console.warn(
+        "BAG OGC fallback failed; returning empty shortlist for gemeente",
+        gemeente.code,
+        error,
+      );
+      return emptyCollection();
+    }
+
+    pandMetaByKey = await fetchPandMetaIndex(gemeente.bbox);
   }
 
   if (!raw || !raw.features || raw.features.length === 0) {
@@ -294,6 +351,7 @@ function mapRawFeatureToScoredFeature(
     props["oppervlakte"] ?? props["oppervlakteverblijfsobject"] ?? 0,
   );
   const pandStatus = resolvePandStatus(props, pandMetaByKey);
+  const mapCategory = resolveMapCategory(rawGebruiksdoel, status, pandStatus);
 
   if (!isEligibleGebruiksdoel(rawGebruiksdoel)) {
     return null;
@@ -313,6 +371,7 @@ function mapRawFeatureToScoredFeature(
     geometry: feature.geometry,
     properties: {
       status,
+      mapCategory,
       pandStatus: pandStatus || "onbekend",
       pandIdentificatie: resolvePandIdentificatie(props) || pandMeta?.identificatie || "",
       bagUri: String(props["rdf_seealso"] ?? ""),
@@ -335,7 +394,7 @@ function mapRawFeatureToScoredFeature(
       gebruiksdoel,
       oppervlakte,
       bouwjaar,
-      identificatie: String(props["identificatie"] ?? ""),
+      identificatie: String(props["identificatie"] ?? feature.id ?? ""),
       woonplaatsnaam: String(
         props["woonplaats_naam"] ??
           props["woonplaats"] ??
@@ -346,6 +405,110 @@ function mapRawFeatureToScoredFeature(
       score,
     },
   };
+}
+
+function mapRawFeatureToIndexFeature(
+  feature: Feature<Geometry, GeoJsonProperties>,
+): Feature<Geometry, VboFeatureProperties> | null {
+  const props = (feature.properties ?? {}) as Record<string, unknown>;
+  const rawGebruiksdoel = String(
+    props["gebruiksdoel"] ?? props["gebruiksdoelverblijfsobject"] ?? "",
+  ).toLowerCase();
+  const identificatie = String(props["identificatie"] ?? feature.id ?? "");
+
+  if (!identificatie || !feature.geometry) {
+    return null;
+  }
+
+  const status = String(props["status"] ?? props["STATUS"] ?? "");
+  const gebruiksdoel =
+    pickPrimaryEligibleGebruiksdoel(rawGebruiksdoel) ??
+    splitGebruiksdoelen(rawGebruiksdoel)[0] ??
+    "";
+  const bouwjaar = numberValue(
+    props["bouwjaar"] ??
+      props["BOUWJAAR"] ??
+      props["oorspronkelijkbouwjaar"] ??
+      props["oorspronkelijk_bouwjaar"],
+  );
+  const oppervlakte = Number(
+    props["oppervlakte"] ?? props["oppervlakteverblijfsobject"] ?? 0,
+  );
+  const pandStatus = resolvePandStatus(props, new Map());
+  const mapCategory = resolveMapCategory(rawGebruiksdoel, status, pandStatus);
+  const score = isEligibleGebruiksdoel(rawGebruiksdoel)
+    ? scoreViability({
+        identificatie,
+        bouwjaar,
+        oppervlakte,
+        gebruiksdoel,
+        vboStatus: status,
+        pandStatus,
+      })
+    : undefined;
+
+  return {
+    type: "Feature",
+    geometry: feature.geometry,
+    properties: {
+      status,
+      pandStatus: pandStatus || "onbekend",
+      pandIdentificatie: resolvePandIdentificatie(props),
+      bagUri: String(props["rdf_seealso"] ?? ""),
+      openbareruimtenaam: String(
+        props["openbareruimtenaam"] ??
+          props["openbare_ruimte"] ??
+          props["openbare_ruimte_naam"] ??
+          props["naam_openbare_ruimte"] ??
+          "",
+      ),
+      huisnummer: String(props["huisnummer"] ?? ""),
+      huisletter: String(props["huisletter"] ?? ""),
+      huisnummertoevoeging: String(
+        props["huisnummertoevoeging"] ??
+          props["toevoeging"] ??
+          props["huisnummer_toevoeging"] ??
+          "",
+      ),
+      postcode: String(props["postcode"] ?? ""),
+      gebruiksdoel,
+      oppervlakte,
+      bouwjaar,
+      identificatie,
+      woonplaatsnaam: String(
+        props["woonplaats_naam"] ??
+          props["woonplaats"] ??
+          props["woonplaatsnaam"] ??
+          props["WOONPLAATSNAAM"] ??
+          "",
+      ),
+      mapCategory,
+      ...(score ? { score } : {}),
+    },
+  };
+}
+
+function resolveMapCategory(
+  rawGebruiksdoel: string,
+  status: string,
+  pandStatus: string,
+): VboFeatureProperties["mapCategory"] {
+  const doelen = splitGebruiksdoelen(rawGebruiksdoel);
+  const isWoning = doelen.includes("woonfunctie");
+  const isCandidate = isEligibleGebruiksdoel(rawGebruiksdoel);
+  const hasStatusSignal =
+    status === "Verblijfsobject buiten gebruik" ||
+    status === "Verblijfsobject gevormd" ||
+    status === "Niet gerealiseerd verblijfsobject" ||
+    status === "Verblijfsobject ingetrokken" ||
+    pandStatus === "Sloopvergunning verleend" ||
+    pandStatus === "Pand gesloopt" ||
+    pandStatus === "Pand buiten gebruik";
+
+  if (isCandidate) return "candidate";
+  if (hasStatusSignal) return "status";
+  if (isWoning) return "woning";
+  return "other";
 }
 
 function applyFiltersToScoredCollection(
@@ -368,13 +531,16 @@ function applyFiltersToScoredCollection(
     type: "FeatureCollection",
     features: collection.features.filter((feature) => {
       const props = feature.properties;
-      const gebruiksdoel = props.gebruiksdoel?.toLowerCase() ?? "";
+      const gebruiksdoelen = splitGebruiksdoelen(props.gebruiksdoel ?? "");
       const vboStatus = props.status ?? "";
       const pandStatus = props.pandStatus ?? "";
       const bouwjaar = props.bouwjaar ?? 0;
       const oppervlakte = props.oppervlakte ?? 0;
 
-      if (selectedGebruiksdoelen && !selectedGebruiksdoelen.has(gebruiksdoel)) {
+      if (
+        selectedGebruiksdoelen &&
+        !gebruiksdoelen.some((value) => selectedGebruiksdoelen.has(value))
+      ) {
         return false;
       }
       if (selectedVboStatuses && !selectedVboStatuses.has(vboStatus)) {
@@ -412,8 +578,13 @@ function logFilterDiagnostics(
       : null;
 
   const afterGebruiksdoel = collection.features.filter((feature) => {
-    const gebruiksdoel = feature.properties.gebruiksdoel?.toLowerCase() ?? "";
-    return !selectedGebruiksdoelen || selectedGebruiksdoelen.has(gebruiksdoel);
+    const gebruiksdoelen = splitGebruiksdoelen(
+      feature.properties.gebruiksdoel ?? "",
+    );
+    return (
+      !selectedGebruiksdoelen ||
+      gebruiksdoelen.some((value) => selectedGebruiksdoelen.has(value))
+    );
   });
   const afterVboStatus = afterGebruiksdoel.filter((feature) => {
     const vboStatus = feature.properties.status ?? "";
@@ -463,7 +634,7 @@ async function fetchVerblijfsobjectWfsPage(
   const baseUrl = buildWfsUrl({
     service: PDOK_ENDPOINTS.BAG_WFS,
     typeName: "bag:verblijfsobject",
-    bbox: wgs84BboxToRd(gemeente.bbox),
+    bbox: gemeente.bbox,
     count: WFS_PAGE_LIMIT,
     srsName: "EPSG:4326",
     propertyName: [...BAG_VERBLIJFSOBJECT_WFS_PROPERTIES],
@@ -478,7 +649,17 @@ async function fetchPandMetaIndex(
   bbox: Gemeente["bbox"],
   signal?: AbortSignal,
 ): Promise<Map<string, PandMeta>> {
-  const pands = await fetchOgcCollectionAllPages("pand", bbox, signal, OGC_PAGE_LIMIT);
+  let pands: OgcFeatureCollection;
+  try {
+    pands = await fetchOgcCollectionAllPages("pand", bbox, signal, OGC_PAGE_LIMIT);
+  } catch (error) {
+    console.warn(
+      "BAG pand metadata enrichment failed; continuing without pand status/bouwjaar enrichment",
+      error,
+    );
+    return new Map();
+  }
+
   const pandMetaByKey = new Map<string, PandMeta>();
 
   for (const pand of pands.features ?? []) {
@@ -597,6 +778,39 @@ async function fetchCollectionPage(
   }
 
   return (await response.json()) as OgcFeatureCollection;
+}
+
+async function fetchOgcItem(
+  collection: "pand" | "verblijfsobject",
+  identificatie: string,
+  signal?: AbortSignal,
+): Promise<Feature<Geometry, GeoJsonProperties>> {
+  const url = new URL(
+    `${BAG_OGC_BASE}/collections/${collection}/items/${encodeURIComponent(
+      identificatie,
+    )}`,
+  );
+  url.searchParams.set("f", "json");
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), signal ? { signal } : {});
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    throw new Error(
+      `Netwerk fout bij ophalen BAG ${collection} item: ${
+        (err as Error).message
+      }`,
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `PDOK BAG OGC item fout (${collection}): ${response.status} ${response.statusText}`,
+    );
+  }
+
+  return (await response.json()) as Feature<Geometry, GeoJsonProperties>;
 }
 
 async function fetchWfsPage(
@@ -755,54 +969,6 @@ function throwIfAborted(signal?: AbortSignal) {
 
 function emptyCollection(): VboFeatureCollection {
   return { type: "FeatureCollection", features: [] };
-}
-
-function wgs84BboxToRd([west, south, east, north]: Gemeente["bbox"]): Gemeente["bbox"] {
-  const corners = [
-    wgs84ToRd(south, west),
-    wgs84ToRd(south, east),
-    wgs84ToRd(north, west),
-    wgs84ToRd(north, east),
-  ];
-  const xs = corners.map(([x]) => x);
-  const ys = corners.map(([, y]) => y);
-
-  return [
-    Math.min(...xs) - RD_BBOX_PADDING_METERS,
-    Math.min(...ys) - RD_BBOX_PADDING_METERS,
-    Math.max(...xs) + RD_BBOX_PADDING_METERS,
-    Math.max(...ys) + RD_BBOX_PADDING_METERS,
-  ];
-}
-
-function wgs84ToRd(lat: number, lon: number): [number, number] {
-  const dLat = 0.36 * (lat - 52.1551744);
-  const dLon = 0.36 * (lon - 5.38720621);
-
-  const x =
-    155000 +
-    190094.945 * dLon +
-    -11832.228 * dLat * dLon +
-    -114.221 * dLat * dLon ** 2 +
-    -32.391 * dLon ** 3 +
-    -0.705 * dLat +
-    -2.34 * dLat ** 3 * dLon +
-    -0.608 * dLat * dLon ** 3 +
-    -0.008 * dLat ** 2 * dLon ** 2;
-  const y =
-    463000 +
-    309056.544 * dLat +
-    3638.893 * dLon ** 2 +
-    73.077 * dLat ** 2 +
-    -157.984 * dLat * dLon ** 2 +
-    59.788 * dLat ** 3 +
-    0.433 * dLon ** 4 +
-    -6.439 * dLat ** 2 * dLon ** 2 +
-    -0.032 * dLat ** 4 +
-    0.092 * dLon ** 2 * dLat ** 3 +
-    -0.054 * dLat * dLon ** 4;
-
-  return [Math.round(x), Math.round(y)];
 }
 
 /**

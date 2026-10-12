@@ -10,12 +10,14 @@
 export const PDOK_ENDPOINTS = {
   /** BAG WFS — adressen, verblijfsobjecten, panden */
   BAG_WFS: "https://service.pdok.nl/lv/bag/wfs/v2_0",
+  BAG_OGC: "https://api.pdok.nl/kadaster/bag/ogc/v2",
 
   /** Bestemmingsplan WFS (Ruimtelijkeplannen.nl) */
   RO_WFS: "https://afnemers.ruimtelijkeplannen.nl/ruimtelijkeplannen/wfs",
 
   /** Kadastrale percelen WFS */
   KADASTER_WFS: "https://service.pdok.nl/kadaster/kadastralekaart/wfs/v5_0",
+  KADASTER_OGC: "https://api.pdok.nl/kadaster/brk-kadastrale-kaart/ogc/v1",
 
   /** BGT (grootschalige topografie) WFS */
   BGT_WFS: "https://service.pdok.nl/lv/bgt/wfs/v1_0",
@@ -28,6 +30,48 @@ export const PDOK_ENDPOINTS = {
   LUCHTFOTO_TILES:
     "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_ortho25/EPSG:3857/{z}/{x}/{y}.jpeg",
 } as const;
+
+export function kadasterPercelenOgcUrl(
+  bbox: [number, number, number, number],
+  limit = 1000,
+): string {
+  const url = new URL(`${PDOK_ENDPOINTS.KADASTER_OGC}/collections/perceel/items`);
+  url.searchParams.set("bbox", bbox.join(","));
+  url.searchParams.set("limit", String(Math.min(Math.max(limit, 1), 1000)));
+  url.searchParams.set("f", "json");
+  return url.toString();
+}
+
+export function bagPandenOgcUrl(
+  bbox: [number, number, number, number],
+  limit = 250,
+): string {
+  const url = new URL(`${PDOK_ENDPOINTS.BAG_OGC}/collections/pand/items`);
+  url.searchParams.set("bbox", bbox.join(","));
+  url.searchParams.set("limit", String(Math.min(Math.max(limit, 1), 1000)));
+  url.searchParams.set("f", "json");
+  return url.toString();
+}
+
+export function bagPandByIdentificationOgcUrl(identification: string): string {
+  const normalized = identification.trim();
+  if (!/^\d{16}$/.test(normalized)) throw new Error("Ongeldige BAG-pandidentificatie.");
+  const url = new URL(`${PDOK_ENDPOINTS.BAG_OGC}/collections/pand/items`);
+  url.searchParams.set("identificatie", normalized);
+  url.searchParams.set("limit", "1");
+  url.searchParams.set("f", "json");
+  return url.toString();
+}
+
+export function bagPandOgcFeatureUrl(featureId: string): string {
+  const normalized = featureId.trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalized)) {
+    throw new Error("Ongeldig PDOK BAG-feature-ID.");
+  }
+  const url = new URL(`${PDOK_ENDPOINTS.BAG_OGC}/collections/pand/items/${normalized}`);
+  url.searchParams.set("f", "json");
+  return url.toString();
+}
 
 export interface WfsQueryParams {
   service: string;

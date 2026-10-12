@@ -14,3 +14,273 @@
   position: relative;
   overflow: hidden;
 }
+
+.overview,
+.moduleView {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, rgba(88, 166, 255, 0.05), transparent 340px),
+    var(--surface-base);
+}
+
+.introPanel,
+.moduleHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+
+.kicker {
+  margin-bottom: 10px;
+  color: var(--accent-blue);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.headline,
+.moduleHeader h1 {
+  max-width: 920px;
+  color: var(--text-primary);
+  font-size: 34px;
+  line-height: 1.06;
+  letter-spacing: 0;
+}
+
+.lede,
+.moduleHeader p {
+  max-width: 760px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.boundaryBox,
+.signalCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 174px;
+  padding: 16px;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: var(--radius-lg);
+  background: rgba(22, 27, 34, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.boundaryLabel,
+.signalCard span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.boundaryBox p {
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.signalCard strong {
+  margin-top: auto;
+  color: var(--text-primary);
+  font-size: 32px;
+  line-height: 1;
+}
+
+.signalCard small {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.metricGrid,
+.moduleGrid,
+.workGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.metricGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.moduleGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metricCard,
+.moduleCard,
+.workGrid article {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(139, 148, 158, 0.18);
+  border-radius: var(--radius-lg);
+  background: rgba(22, 27, 34, 0.74);
+}
+
+.metricCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 126px;
+}
+
+.metricLabel,
+.metricDetail,
+.moduleMeta dt {
+  color: var(--text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metricValue {
+  color: var(--text-primary);
+  font-size: 30px;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.metricDetail {
+  margin-top: auto;
+  line-height: 1.4;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.moduleCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 260px;
+}
+
+.moduleCard h2,
+.workGrid h2 {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.moduleCard p,
+.workGrid p,
+.workGrid li {
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.moduleMeta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.moduleMeta dd {
+  margin-top: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.moduleAction {
+  height: 36px;
+  border: 1px solid rgba(88, 166, 255, 0.34);
+  border-radius: var(--radius-md);
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--accent-blue);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.moduleAction:hover {
+  background: rgba(88, 166, 255, 0.18);
+}
+
+.workGrid ul {
+  padding-left: 18px;
+}
+
+.workGrid li + li {
+  margin-top: 8px;
+}
+
+.policyPanel {
+  border-color: rgba(227, 179, 65, 0.32) !important;
+  background: rgba(227, 179, 65, 0.06) !important;
+}
+
+@media (max-width: 1080px) {
+  .introPanel,
+  .moduleHeader,
+  .metricGrid,
+  .moduleGrid,
+  .workGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .headline,
+  .moduleHeader h1 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 760px) {
+  .overview,
+  .moduleView {
+    padding: 18px 14px 72px;
+  }
+
+  .headline,
+  .moduleHeader h1 {
+    font-size: 24px;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+
+  .lede,
+  .moduleHeader p,
+  .boundaryBox p {
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .metricCard,
+  .moduleCard,
+  .workGrid article {
+    padding: 14px;
+  }
+
+  .metricValue {
+    font-size: 26px;
+  }
+}

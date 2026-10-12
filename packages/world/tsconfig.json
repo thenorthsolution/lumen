@@ -1,0 +1,10 @@
+{
+  "extends": "@lumen/typescript-config/base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "target": "ES2022"
+  },
+  "include": ["src/**/*.ts"]
+}

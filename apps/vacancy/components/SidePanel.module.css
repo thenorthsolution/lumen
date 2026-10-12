@@ -23,6 +23,112 @@
   text-transform: uppercase;
 }
 
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 4px 14px 8px;
+}
+
+.mapCard {
+  position: relative;
+  min-width: 0;
+  height: 74px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+}
+
+.mapCard:hover {
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+
+.mapCardActive {
+  border-color: var(--accent-orange);
+  box-shadow:
+    0 0 0 1px rgba(255, 138, 28, 0.24),
+    0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+.mapCardPreview {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 36%),
+    repeating-linear-gradient(28deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 12px),
+    #252b32;
+}
+
+.mapCard_dataviz .mapCardPreview {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(239, 243, 244, 0.9)),
+    repeating-linear-gradient(35deg, rgba(150, 160, 170, 0.22) 0 1px, transparent 1px 14px);
+}
+
+.mapCard_brt .mapCardPreview {
+  background:
+    linear-gradient(135deg, rgba(54, 61, 70, 0.9), rgba(20, 25, 31, 0.96)),
+    repeating-linear-gradient(35deg, rgba(125, 138, 154, 0.16) 0 1px, transparent 1px 13px);
+}
+
+.mapCard_luchtfoto .mapCardPreview {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(90, 132, 76, 0.86), transparent 28%),
+    radial-gradient(circle at 75% 35%, rgba(92, 104, 75, 0.9), transparent 30%),
+    linear-gradient(135deg, #4c6148, #79886d);
+}
+
+.mapCard_hybrid .mapCardPreview {
+  background:
+    linear-gradient(135deg, rgba(28, 36, 45, 0.82), rgba(12, 16, 22, 0.92)),
+    radial-gradient(circle at 30% 28%, rgba(80, 113, 76, 0.62), transparent 30%),
+    repeating-linear-gradient(35deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 12px);
+}
+
+.mapCardPreview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 20%, rgba(0, 0, 0, 0.58));
+}
+
+.mapCardLabel {
+  position: absolute;
+  left: 9px;
+  bottom: 8px;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+.mapCard_dataviz .mapCardLabel {
+  color: #20242a;
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.8);
+}
+
+.mapCardBadge {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 1;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: rgba(12, 16, 22, 0.72);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+}
+
 /* Layer rows */
 .layerRow {
   display: flex;
@@ -46,8 +152,8 @@
 
 .dot_hoog    { background: var(--color-hoog); }
 .dot_middel  { background: var(--color-middel); }
-.dot_laag    { background: var(--border-default); }
-.dot_percelen { background: var(--accent-blue); }
+.dot_laag    { background: #24476f; }
+.dot_percelen { background: var(--accent-orange); }
 
 .layerLabel {
   font-size: 12px;
@@ -76,7 +182,7 @@
 }
 
 .toggleOn {
-  background: var(--accent-blue-dim);
+  background: var(--accent-orange-dim);
 }
 
 .toggleThumb {
@@ -114,7 +220,7 @@
 
 .filterValue {
   font-size: 10px;
-  color: var(--accent-blue);
+  color: var(--accent-orange);
   font-weight: 500;
 }
 
@@ -152,9 +258,9 @@
 }
 
 .chipActive {
-  background: var(--accent-blue-bg);
-  border-color: var(--accent-blue-dim);
-  color: var(--accent-blue);
+  background: var(--accent-orange-bg);
+  border-color: var(--accent-orange-dim);
+  color: var(--accent-orange);
 }
 
 /* Methodology note */
@@ -183,7 +289,7 @@
 
 .methLink {
   font-size: 10px;
-  color: var(--accent-blue);
+  color: var(--accent-orange);
   text-decoration: none;
 }
 

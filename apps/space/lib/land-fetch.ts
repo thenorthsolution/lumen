@@ -65,7 +65,7 @@ async function fetchUnderusedParcels(
     ],
   });
 
-  const res = await fetch(url, { signal });
+  const res = await fetch(url, signal ? { signal } : undefined);
   if (!res.ok) throw new Error(`BAG WFS error: ${res.status}`);
   const data = (await res.json()) as {
     features?: Feature<Geometry, GeoJsonProperties>[];
@@ -100,7 +100,7 @@ async function fetchBestemmingsplannen(
   });
 
   try {
-    const res = await fetch(url, { signal });
+    const res = await fetch(url, signal ? { signal } : undefined);
     if (!res.ok) return [];
     const data = (await res.json()) as {
       features?: Feature<Geometry, GeoJsonProperties>[];
@@ -240,7 +240,7 @@ export async function fetchLandOpportunities(
 
   return {
     type: "FeatureCollection",
-    features: features as LandFeatureCollection["features"],
+    features: features as unknown as LandFeatureCollection["features"],
   };
 }
 

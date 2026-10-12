@@ -107,20 +107,26 @@ export function DetailPanel({
     detailUrl.searchParams.set("gemeenteCode", gemeente.code);
     detailUrl.searchParams.set("identificatie", feature.properties.identificatie);
 
-    Promise.all([
-      fetch(detailUrl.toString(), { signal: controller.signal }).then(
-        async (response) => {
-          const data = (await response.json()) as {
-            error?: string;
-            feature?: VboFeature;
-          };
-          if (!response.ok || !data.feature) {
-            throw new Error(data.error || "Detailobject kon niet worden geladen.");
-          }
-          return data.feature;
-        },
-      ),
-      fetch(url.toString(), { signal: controller.signal }).then(async (response) => {
+    const detailPromise = fetch(detailUrl.toString(), {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as {
+          error?: string;
+          feature?: VboFeature;
+        };
+        if (!response.ok || !data.feature) {
+          throw new Error(data.error || "Detailobject kon niet worden geladen.");
+        }
+        return data.feature;
+      })
+      .catch((error) => {
+        if ((error as Error).name === "AbortError") throw error;
+        return null;
+      });
+
+    const permitsPromise = fetch(url.toString(), { signal: controller.signal })
+      .then(async (response) => {
         if (!response.ok) {
           throw new Error("Vergunningen konden niet worden geladen.");
         }
@@ -129,11 +135,14 @@ export function DetailPanel({
           summary?: string;
           notices?: PermitNotice[];
         };
-      }),
-    ])
+      });
+
+    Promise.all([detailPromise, permitsPromise])
       .then(([nextFeature, permitData]) => {
         if (controller.signal.aborted) return;
-        setDetailFeature(nextFeature);
+        if (nextFeature) {
+          setDetailFeature(nextFeature);
+        }
         setPermitState({
           isLoading: false,
           error: "",

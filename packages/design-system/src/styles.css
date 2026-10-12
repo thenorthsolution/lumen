@@ -1,6 +1,39 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #3b82f6;
-  /* Add your variables here */
+  --color-lumen-canvas: oklch(20.9% .004 264.477);
+  --color-lumen-surface: oklch(26% .006 271.191);
+  --color-lumen-raised: oklch(29.3% .006 271.223);
+  --color-lumen-ink: oklch(96.4% .002 247.839);
+  --color-lumen-muted: oklch(73.1% .008 260.731);
+  --color-lumen-accent: #1142eb;
 }
+
+:root {
+  color-scheme: dark;
+  --lumen-canvas: oklch(20.9% .004 264.477); --lumen-surface: oklch(26% .006 271.191 / .96); --lumen-surface-solid: oklch(26% .006 271.191);
+  --lumen-raised: oklch(29.3% .006 271.223); --lumen-hover: oklch(31.8% .007 274.747); --lumen-ink: oklch(96.4% .002 247.839); --lumen-ink-secondary: oklch(73.1% .008 260.731);
+  --lumen-ink-muted: oklch(54.1% .01 264.484); --lumen-border: oklch(30.8% .006 258.354); --lumen-border-strong: oklch(35.6% .007 264.474);
+  --lumen-accent: #1142eb; --lumen-accent-hover: #315cff; --lumen-accent-bright: #7892ff; --lumen-accent-soft: rgb(17 66 235 / .16); --lumen-on-accent: #fff;
+  --lumen-selection: #315cff; --lumen-success: oklch(70.5% .154 153.814); --lumen-warning: oklch(74.6% .156 55.642); --lumen-error: oklch(66.6% .18 21.433);
+  --lumen-info: #7892ff; --lumen-confidence-high: oklch(70.5% .154 153.814); --lumen-confidence-medium: oklch(74.6% .156 55.642);
+  --lumen-confidence-low: oklch(66.6% .18 21.433); --lumen-source: oklch(73.1% .008 260.731); --lumen-map-building: oklch(31.8% .007 274.747);
+  --lumen-map-parcel: oklch(96.4% .002 247.839 / .1); --lumen-map-water: #17202c;
+  --lumen-chart-1: #1142eb; --lumen-chart-2: oklch(70.5% .154 153.814); --lumen-chart-3: oklch(74.6% .156 55.642);
+  --lumen-space-1: .25rem; --lumen-space-2: .5rem; --lumen-space-3: .75rem; --lumen-space-4: 1rem; --lumen-space-5: 1.5rem; --lumen-space-6: 2rem;
+  --lumen-radius-sm: .25rem; --lumen-radius-md: .5rem; --lumen-radius-lg: .625rem;
+  --lumen-shadow-panel: 0 0 0 1px rgb(255 255 255 / .08),0 8px 28px rgb(0 0 0 / .34); --lumen-shadow-control: 0 0 0 1px rgb(255 255 255 / .08),0 1px 2px rgb(0 0 0 / .3); --lumen-motion-fast: 120ms; --lumen-motion-medium: 200ms;
+  --lumen-ease: cubic-bezier(.16,1,.3,1); --lumen-focus: 0 0 0 2px var(--lumen-canvas),0 0 0 4px var(--lumen-accent);
+  --font-heading: "Kecal",Arial,Helvetica,system-ui,sans-serif; --font-sans: Arial,Helvetica,system-ui,sans-serif; --font-mono: "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    color-scheme: light; --lumen-canvas: oklch(98.5% .001 286.376); --lumen-surface: oklch(100% 0 0 / .96); --lumen-surface-solid: #fff;
+    --lumen-raised: oklch(97.9% .002 247.839); --lumen-hover: oklch(93.3% .003 247.86); --lumen-ink: oklch(24.7% .006 258.361); --lumen-ink-secondary: oklch(50.6% .01 264.477);
+    --lumen-ink-muted: oklch(54.1% .01 264.484); --lumen-border: oklch(94.6% .003 264.542); --lumen-border-strong: oklch(91.2% .005 258.326);
+    --lumen-accent-hover:#0d36ca; --lumen-accent-soft:rgb(17 66 235 / .09); --lumen-shadow-panel:0 0 0 1px var(--lumen-border),0 8px 28px rgb(0 0 0 / .08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) { :root { --lumen-motion-fast: 0ms; --lumen-motion-medium: 0ms; } }

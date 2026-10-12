@@ -1,4 +1,15 @@
-import { config } from "@lumen/eslint-config/react-internal";
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
 
-/** @type {import("eslint").Linter.Config} */
-export default config;
+export default tseslint.config(
+  { ignores: ["node_modules/**", "dist/**"] },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
+    },
+  },
+);

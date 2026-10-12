@@ -1,8 +1,10 @@
 # Lumen
 
-**Open tools for the Dutch housing crisis. Built by [North Solution](https://thenorthsolution.com)**
+**An AI-native spatial operating system for the built environment. Built by [North Solution](https://thenorthsolution.com)**
 
-Three free, open-source spatial tools that address the visibility and coordination failures at the core of the Netherlands housing shortage. No account required. No paywall. MIT licensed.
+Lumen is being rebuilt around one canonical model of the world. The new world-first application lives in `apps/lumen`; the existing Vacancy, Space, and Pipeline applications remain operational prototypes and sources of proven domain logic during the staged migration.
+
+The current public tools address visibility and coordination failures at the core of the Netherlands housing shortage. No account required. No paywall.
 
 ---
 
@@ -46,6 +48,7 @@ npm run dev
 
 Individual tools run on:
 
+- Lumen World: http://localhost:3000
 - Lumen Vacancy: http://localhost:3001
 - Lumen Space: http://localhost:3002
 - Lumen Pipeline: http://localhost:3003
@@ -59,8 +62,10 @@ lumen/
 ├── apps/
 │   ├── vacancy/         # Next.js 15 + MapLibre GL
 │   ├── space/           # Next.js 15 + MapLibre GL
-│   └── pipeline/        # Next.js 15 + D3/Chart.js
+│   ├── pipeline/        # Next.js 15 + D3/Chart.js
+│   └── lumen/           # New unified spatial workspace
 ├── packages/
+│   ├── world/                  # Canonical entities, commands, renderer contracts
 │   ├── pdok-client/            # Typed PDOK WFS + tile helpers
 │   └── bag-utils/              # BAG status codes + viability model
 └── pipeline/                   # Python + DuckDB data pipeline
@@ -70,12 +75,16 @@ lumen/
 
 - Frontend: Next.js 15 (App Router), TypeScript, CSS Modules
 - Maps: MapLibre GL JS (WebGL vector tiles, zero licensing cost)
+- 3D: lazy Cesium adapter with PDOK imagery and a keyless 3D BAG fallback
 - Geodata: PDOK WFS/WMS (public, no key), CBS Statline, TenderNed
 - Shared packages: Turborepo monorepo
 - Data pipeline: Python + DuckDB (reproducible, single-command)
-- Deployment: Vercel (apps) + Cloudflare (tiles)
+- Managed cloud: Vercel + Supabase (Auth/PostgreSQL/PostGIS/Storage) + Stripe
+- Public world delivery: open PDOK/3DBAG sources, with a future versioned tile/CDN pipeline
 
-All data sources are free and open. The full stack runs without any API keys or paid services.
+The public 2D and open 3DBAG world runs without an account, API key, or paid map service. Accounts, managed AI, organization workspaces, and billing are optional cloud capabilities. Lumen's 3D renderer uses the public Dutch 3D Basisvoorziening through PDOK.
+
+Apply [`supabase/migrations/202609100001_lumen_cloud_foundation.sql`](supabase/migrations/202609100001_lumen_cloud_foundation.sql) and copy [`apps/lumen/.env.example`](apps/lumen/.env.example) to configure the managed layer. The product and repository boundary is documented in [`docs/LUMEN_CLOUD_FOUNDATION.md`](docs/LUMEN_CLOUD_FOUNDATION.md). Selected lifecycle logic is adapted from God's Eye View under MIT; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ---
 

@@ -9,16 +9,21 @@ import type {
 import {
   ALL_PAND_STATUSES,
   ALL_VBO_STATUSES,
-  countByTier,
 } from "@lumen/bag-utils";
 import styles from "./SidePanel.module.css";
 
 const GEBRUIKSDOEL_OPTIONS = [
-  { value: "kantoorfunctie", label: "Kantoor" },
-  { value: "winkelfunctie", label: "Winkel" },
+  { value: "woonfunctie", label: "Woningen" },
+  { value: "industriefunctie", label: "Industrie" },
+  { value: "winkelfunctie", label: "Winkels" },
   { value: "bijeenkomstfunctie", label: "Bijeenkomst" },
   { value: "onderwijsfunctie", label: "Onderwijs" },
-  { value: "industriefunctie", label: "Industrie" },
+  { value: "celfunctie", label: "Cellen" },
+  { value: "overige gebruiksfunctie", label: "Overige gebruiksf..." },
+  { value: "logiesfunctie", label: "Logies" },
+  { value: "kantoorfunctie", label: "Kantoren" },
+  { value: "gezondheidszorgfunctie", label: "Gezondheidszorg" },
+  { value: "sportfunctie", label: "Sport" },
 ];
 
 const VBO_STATUS_OPTIONS = ALL_VBO_STATUSES.map((value) => ({
@@ -30,6 +35,18 @@ const PAND_STATUS_OPTIONS = ALL_PAND_STATUSES.map((value) => ({
   value,
   label: shortStatusLabel(value),
 }));
+
+const BASEMAP_OPTIONS: Array<{
+  value: BasemapMode;
+  label: string;
+  badge: string;
+  tone: "dataviz" | "brt" | "luchtfoto" | "hybrid";
+}> = [
+  { value: "dataviz", label: "Dataviz", badge: "2D", tone: "dataviz" },
+  { value: "brt", label: "BRT", badge: "2D", tone: "brt" },
+  { value: "luchtfoto", label: "Luchtfoto", badge: "3D", tone: "luchtfoto" },
+  { value: "hybrid", label: "Hybrid", badge: "3D", tone: "hybrid" },
+];
 
 interface SidePanelProps {
   basemap: BasemapMode;
@@ -50,15 +67,19 @@ export function SidePanel({
   onFiltersChange,
   featureCollection,
 }: SidePanelProps) {
-  const scores =
-    featureCollection?.features
-      .map((f) => f.properties?.score)
-      .filter(Boolean) ?? [];
-
-  const counts =
-    scores.length > 0
-      ? countByTier(scores as Parameters<typeof countByTier>[0])
-      : { hoog: 0, middel: 0, laag: 0, uitgesloten: 0 };
+  const features = featureCollection?.features ?? [];
+  const candidateCount = features.filter(
+    (feature) => feature.properties.mapCategory === "candidate",
+  ).length;
+  const statusCount = features.filter(
+    (feature) => feature.properties.mapCategory === "status",
+  ).length;
+  const indexCount = features.filter(
+    (feature) =>
+      feature.properties.mapCategory === "woning" ||
+      feature.properties.mapCategory === "other" ||
+      !feature.properties.mapCategory,
+  ).length;
 
   function toggleLayer(key: keyof LayerVisibility) {
     onLayersChange({ ...layers, [key]: !layers[key] });
@@ -81,22 +102,20 @@ export function SidePanel({
   return (
     <aside className={styles.panel}>
       <section className={styles.section}>
-        <h2 className={styles.sectionLabel}>Basemap</h2>
-        <div className={styles.chipWrap}>
-          {[
-            { value: "brt", label: "BRT" },
-            { value: "luchtfoto", label: "Luchtfoto" },
-            { value: "hybrid", label: "Hybrid" },
-          ].map((opt) => (
+        <h2 className={styles.sectionLabel}>Kaarten</h2>
+        <div className={styles.mapGrid}>
+          {BASEMAP_OPTIONS.map((opt) => (
             <button
               key={opt.value}
-              className={`${styles.chip} ${
-                basemap === opt.value ? styles.chipActive : ""
+              className={`${styles.mapCard} ${styles[`mapCard_${opt.tone}`]} ${
+                basemap === opt.value ? styles.mapCardActive : ""
               }`}
-              onClick={() => onBasemapChange(opt.value as BasemapMode)}
+              onClick={() => onBasemapChange(opt.value)}
               aria-pressed={basemap === opt.value}
             >
-              {opt.label}
+              <span className={styles.mapCardPreview} aria-hidden />
+              <span className={styles.mapCardLabel}>{opt.label}</span>
+              <span className={styles.mapCardBadge}>{opt.badge}</span>
             </button>
           ))}
         </div>
@@ -108,22 +127,22 @@ export function SidePanel({
 
         <LayerRow
           dot="hoog"
-          label="Hoog potentieel"
-          count={counts.hoog}
+          label="Conversiekandidaten"
+          count={candidateCount}
           active={layers.hoog}
           onToggle={() => toggleLayer("hoog")}
         />
         <LayerRow
           dot="middel"
-          label="Middel potentieel"
-          count={counts.middel}
+          label="Statussignalen"
+          count={statusCount}
           active={layers.middel}
           onToggle={() => toggleLayer("middel")}
         />
         <LayerRow
           dot="laag"
-          label="Laag / uitgesloten"
-          count={counts.laag + counts.uitgesloten}
+          label="Objectindex incl. woningen"
+          count={indexCount}
           active={layers.laag}
           onToggle={() => toggleLayer("laag")}
         />

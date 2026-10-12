@@ -20,7 +20,7 @@
 .logoNorth {
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent-blue);
+  color: var(--accent-orange);
   letter-spacing: 0.1em;
 }
 
@@ -40,6 +40,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  min-width: 0;
 }
 
 .navItem {
@@ -61,125 +62,12 @@
 }
 
 .navItemActive {
-  color: var(--text-primary);
-  background: var(--surface-overlay);
+  color: var(--accent-orange);
+  background: var(--accent-orange-bg);
 }
 
 .spacer {
   flex: 1;
-}
-
-.aiWrap {
-  position: relative;
-  width: min(420px, 32vw);
-  min-width: 260px;
-}
-
-.aiForm {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.aiInput {
-  flex: 1;
-  min-width: 0;
-  height: 34px;
-  padding: 0 12px;
-  background: rgba(33, 38, 45, 0.72);
-  border: 0.5px solid var(--border-subtle);
-  border-radius: 999px;
-  color: var(--text-primary);
-  outline: none;
-  font-size: 12px;
-  font-family: var(--font-mono);
-}
-
-.aiInput::placeholder {
-  color: var(--text-muted);
-}
-
-.aiInput:focus {
-  border-color: rgba(88, 166, 255, 0.5);
-}
-
-.aiButton {
-  height: 34px;
-  padding: 0 12px;
-  border: 0.5px solid rgba(88, 166, 255, 0.32);
-  border-radius: 999px;
-  background: rgba(88, 166, 255, 0.12);
-  color: var(--accent-blue);
-  cursor: pointer;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  white-space: nowrap;
-}
-
-.aiDropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 220;
-  background: var(--surface-raised);
-  border: 0.5px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.aiList {
-  list-style: none;
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.aiResult {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-}
-
-.aiResult:hover {
-  background: rgba(88, 166, 255, 0.06);
-}
-
-.aiResultMain {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.aiResultTitle {
-  font-size: 11px;
-  color: var(--text-primary);
-  line-height: 1.4;
-}
-
-.aiResultSub {
-  font-size: 10px;
-  color: var(--text-secondary);
-}
-
-.aiResultMeta {
-  flex-shrink: 0;
-  font-size: 10px;
-  color: var(--accent-blue);
-  font-family: var(--font-mono);
-}
-
-.aiState {
-  padding: 12px;
-  font-size: 11px;
-  color: var(--text-secondary);
 }
 
 .loadingBar {
@@ -231,7 +119,7 @@
 .gemeenteName {
   font-size: 11px;
   font-weight: 500;
-  color: var(--accent-blue);
+  color: var(--accent-orange);
 }
 
 .gemeenteProvince {
@@ -325,7 +213,7 @@
 
 .resultMeta {
   font-size: 10px;
-  color: var(--accent-blue);
+  color: var(--accent-orange);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
@@ -344,7 +232,7 @@
 
 .footerLink {
   font-size: 10px;
-  color: var(--accent-blue);
+  color: var(--accent-orange);
   text-decoration: none;
   letter-spacing: 0.04em;
 }
@@ -361,17 +249,55 @@
   padding: 4px;
 }
 
-@media (max-width: 1100px) {
-  .aiWrap {
-    width: min(320px, 36vw);
-    min-width: 220px;
-  }
-
-  .aiInput {
-    font-size: 11px;
-  }
-}
-
 .githubLink:hover {
   color: var(--text-primary);
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    padding: 0 10px;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .logo {
+    flex-shrink: 0;
+    margin-right: 0;
+  }
+
+  .logoTool,
+  .logoDivider,
+  .githubLink {
+    display: none;
+  }
+
+  .nav {
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navItem {
+    flex: 0 0 auto;
+    padding: 5px 9px;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  .gemeentePill {
+    max-width: 116px;
+    padding: 5px 8px;
+  }
+
+  .gemeenteName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

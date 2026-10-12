@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "turbo dev",
+    "dev:lumen": "turbo dev --filter=@lumen/app",
     "build": "turbo build",
-    "lint": "turbo lint",
+    "lint": "turbo lint --filter=@lumen/app --filter=@lumen/ui --filter=@lumen/pdok-client",
+    "test": "turbo test",
+    "test:db": "pnpm dlx supabase@2.117.0 test db",
     "type-check": "turbo type-check",
+    "check:lumen": "turbo lint type-check build --filter=@lumen/app",
     "clean": "turbo clean"
   },
   "devDependencies": {
@@ -19,5 +23,11 @@
   "packageManager": "pnpm@10.7.0",
   "engines": {
     "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@cesium/engine": "20.0.1",
+      "@cesium/widgets": "13.1.0"
+    }
   }
 }
